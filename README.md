@@ -10,6 +10,8 @@ Minimal CEX-built static/shared library with one exported function.
 - `cex_demo_run(cex_demo_request_t* req)` — returns `cex_demo_exc_t`
   (`const char*`), where `NULL` means success. A `NULL` request returns an error;
   otherwise `req->value` is incremented.
+- `cex_demo_Error` — exported struct with `ok` (`NULL`) and `argument` pointers.
+  Compare errors by pointer against these fields; the string is display-only.
 
 ## Build and test
 
@@ -22,3 +24,17 @@ cc cex.c -o cex
 `./cex build-lib` writes `build/lib/libcex_demo.a` and the shared library.
 
 `lib/cex_demo.c` includes `cex.h`; `cex.h` is vendored and must not be edited.
+
+## Bindings
+
+Three language bindings live under `bindings/`: `c_static`, `python_ctypes`, and
+`python_cffi`. Each is an ergonomics example, not a test suite.
+
+```sh
+bash run_bindings.sh
+```
+
+`run_bindings.sh` builds the library once, runs every `bindings/*/run.sh`, and
+summarizes pass/fail. Each example compares `cex_demo_exc_t` by pointer against
+`cex_demo_Error.ok` / `.argument`. See `bindings/README.md` for the per-binding
+contract and how to add a language.

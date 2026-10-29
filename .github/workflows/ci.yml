@@ -16,6 +16,18 @@ jobs:
       - name: build library
         run: ./cex build-lib
 
+  bindings:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: bootstrap cex
+        run: cc cex.c -o cex
+      - name: bindings
+        run: bash run_bindings.sh
+
   macos:
     runs-on: macos-latest
     steps:
