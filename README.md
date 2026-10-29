@@ -10,7 +10,7 @@ they break. The library itself is the proof vehicle, not the product.
 
 - One plain-C header (`lib/cex_demo.h`) with no `cex.h` dependency.
 - Static archive and shared library built by `./cex build-lib`.
-- 38 exported `cex_demo_*` symbols, no CEX internals leaked.
+- 34 exported `cex_demo_*` symbols, no CEX internals leaked.
 - Identical behaviour across six consumers on Linux: C static, C `dlopen`,
   Python ctypes, Python cffi (static link), Node koffi, Zig static, Zig dynamic.
 - Cross-built artifacts: Windows x64 DLL, macOS arm64/x64 dylibs, Linux aarch64 `.so`.
@@ -83,7 +83,7 @@ build time; `dynamic` means the shared library is loaded at runtime.
 | raw `Exc` + helpers | PASS | PASS | PASS | PASS | PASS | PASS | PASS |
 | int32 status codes | PASS | PASS | PASS | PASS | PASS | PASS | PASS |
 | hybrid code + raw Exc | PASS | PASS | PASS | PASS | PASS | PASS | PASS |
-| exported error consts | PASS | PASS | PASS | PASS | PASS | PASS | PASS |
+| exported `Error` struct | PASS | PASS | PASS | PASS | PASS | PASS | PASS |
 | thread-local traceback | PASS | PASS | PASS | PASS | PASS | PASS | PASS |
 
 Node `call_on_thread` is `SKIP`: koffi queues a foreign-thread callback to the
@@ -94,9 +94,10 @@ callback cannot run. This is a real limitation, not a bug in the library.
 
 - **Strings** are UTF-8 `const char*`. Borrowed strings are valid until the next
   call on the same thread; never free them.
-- **Errors** are `const char*` where `NULL` is success. Compare by pointer
-  identity against the exported `cex_demo_Err_*` values, or use
-  `cex_demo_error_code` / `cex_demo_error_string`.
+- **Errors** are `const char*` where `NULL` is success. The exported
+  `cex_demo_Error` struct (aliased as `Error` in the header) exposes `ok`,
+  `argument`, and `overflow`; compare by pointer identity against those fields,
+  or use `cex_demo_error_code` / `cex_demo_error_string`.
 - **Ownership**: caller passes output buffers; library-owned memory is released
   only with `cex_demo_free`; caller-allocator variants free with the caller's own
   `free`.
@@ -112,6 +113,10 @@ callback cannot run. This is a real limitation, not a bug in the library.
 - `Exc` is just `char*`; pointer identity is ABI-trivial but most high-level FFI
   layers convert `char*` to a string and lose the address. Bindings must keep
   pointer-returning functions as `void*`/`c_void_p` to compare identity.
+- `Error` is a public macro alias for `cex_demo_Error`; consumers must not
+  include both `cex.h` and `cex_demo.h` in one translation unit.
+- Only `ok`, `argument`, and `overflow` are exported. Other CEX errors still
+  stringify via `cex_demo_error_string` but map to `CEX_DEMO_ERR_UNKNOWN`.
 - Python `ctypes.c_char_p` returns `bytes`, not the pointer; `c_void_p` is
   required for identity checks.
 - cffi needs `extern` declarations for exported globals and explicit `malloc`/
@@ -121,7 +126,7 @@ callback cannot run. This is a real limitation, not a bug in the library.
 - Static linking from a managed runtime needs a native shim. cffi API mode does
   it for Python; Node would need an N-API addon (not attempted).
 - Windows symbol hygiene: `__declspec(dllexport)` disables MinGW auto-export, so
-  the DLL exports exactly the 38 API symbols. `--exclude-all-symbols` is not
+  the DLL exports exactly the 34 API symbols. `--exclude-all-symbols` is not
   accepted by Zig's LLD, so it is not used.
 - Mach-O prefixes exported C symbols with `_`; the export check strips it.
 - The native `.so` is ~560 KB because the CEX runtime is embedded; the cross

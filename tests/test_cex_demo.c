@@ -1,6 +1,7 @@
 #define CEX_IMPLEMENTATION
 #define CEX_TEST
 #include "cex.h"
+#define CEX_DEMO_PREBUILT
 #include "lib/cex_demo.c"
 
 static int32_t
@@ -124,20 +125,24 @@ test$case(cex_demo_errors)
     int32_t v = 0;
     const char* exc = NULL;
 
+    tassert(cex_demo_Error.ok == Error.ok);
+    tassert(cex_demo_Error.argument == Error.argument);
+    tassert(cex_demo_Error.overflow == Error.overflow);
+
     tassert(cex_demo_parse_i32_exc("42", &v) == NULL);
     tassert_eq(v, 42);
-    tassert(cex_demo_parse_i32_exc("abc", &v) == cex_demo_Err_argument);
-    tassert(cex_demo_parse_i32_exc("2147483648", &v) == cex_demo_Err_overflow);
+    tassert(cex_demo_parse_i32_exc("abc", &v) == cex_demo_Error.argument);
+    tassert(cex_demo_parse_i32_exc("2147483648", &v) == cex_demo_Error.overflow);
     tassert_eq(cex_demo_parse_i32_status("abc", &v), CEX_DEMO_ERR_ARGUMENT);
     tassert_eq(cex_demo_parse_i32_status("42", &v), CEX_DEMO_ERR_OK);
     tassert_eq(cex_demo_parse_i32_hybrid("abc", &v, &exc), CEX_DEMO_ERR_ARGUMENT);
-    tassert(exc == cex_demo_Err_argument);
+    tassert(exc == cex_demo_Error.argument);
 
     tassert_eq(cex_demo_error_code(NULL), CEX_DEMO_ERR_OK);
-    tassert_eq(cex_demo_error_code(cex_demo_Err_overflow), CEX_DEMO_ERR_OVERFLOW);
+    tassert_eq(cex_demo_error_code(cex_demo_Error.overflow), CEX_DEMO_ERR_OVERFLOW);
     tassert_eq(cex_demo_error_code("custom"), CEX_DEMO_ERR_UNKNOWN);
     tassert_eq((char*)cex_demo_error_string(NULL), "OK");
-    tassert_eq((char*)cex_demo_error_string(cex_demo_Err_argument), "ArgumentError");
+    tassert_eq((char*)cex_demo_error_string(cex_demo_Error.argument), "ArgumentError");
     tassert_eq((char*)cex_demo_strerror(CEX_DEMO_ERR_OVERFLOW), "OverflowError");
     tassert_eq((char*)cex_demo_strerror(123), "UnknownError");
 

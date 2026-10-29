@@ -100,27 +100,34 @@ cb_add(int32_t value, void* user_data)
 }
 
 #ifdef CEX_DEMO_DYNAMIC
-static const char*
-err_const_by_name(const char* name)
+static const cex_demo_errors_t*
+err_table(void)
 {
-    char sym_name[64];
-    snprintf(sym_name, sizeof(sym_name), "cex_demo_Err_%s", name);
-    void* sym = SYM(cex_demo_lib, sym_name);
-    if (!sym) { return NULL; }
-    return *(const char* const*)sym;
+    return (const cex_demo_errors_t*)SYM(cex_demo_lib, "cex_demo_Error");
 }
 #else
+static const cex_demo_errors_t*
+err_table(void)
+{
+    return &cex_demo_Error;
+}
+#endif
+
+static const char*
+err_field_by_name(const cex_demo_errors_t* e, const char* name)
+{
+    if (!e) { return NULL; }
+    if (!strcmp(name, "ok")) { return e->ok; }
+    if (!strcmp(name, "argument")) { return e->argument; }
+    if (!strcmp(name, "overflow")) { return e->overflow; }
+    return NULL;
+}
+
 static const char*
 err_const_by_name(const char* name)
 {
-    if (!strcmp(name, "ok")) { return cex_demo_Err_ok; }
-    if (!strcmp(name, "argument")) { return cex_demo_Err_argument; }
-    if (!strcmp(name, "overflow")) { return cex_demo_Err_overflow; }
-    if (!strcmp(name, "not_found")) { return cex_demo_Err_not_found; }
-    if (!strcmp(name, "memory")) { return cex_demo_Err_memory; }
-    return NULL;
+    return err_field_by_name(err_table(), name);
 }
-#endif
 
 static void
 run_case(const char* kind, char* args, char* res, size_t res_len)
@@ -239,6 +246,11 @@ run_case(const char* kind, char* args, char* res, size_t res_len)
     } else if (!strcmp(kind, "err_const")) {
         const char* c = err_const_by_name(a[0]);
         snprintf(res, res_len, "%s:%s", a[0], c ? c : "NULL");
+    } else if (!strcmp(kind, "err_identity")) {
+        int32_t v = 0;
+        const char* exc = F(cex_demo_parse_i32_exc)(a[0], &v);
+        const char* want = err_field_by_name(err_table(), a[1]);
+        snprintf(res, res_len, "%d", exc == want);
     } else if (!strcmp(kind, "error_code")) {
         snprintf(res, res_len, "%d", F(cex_demo_error_code)(err_const_by_name(a[0])));
     } else if (!strcmp(kind, "strerror")) {

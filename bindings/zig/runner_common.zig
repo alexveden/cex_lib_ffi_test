@@ -19,6 +19,12 @@ pub const Padded = extern struct {
     name: [16]u8,
 };
 
+pub const Errors = extern struct {
+    ok: ?[*:0]const u8,
+    argument: ?[*:0]const u8,
+    overflow: ?[*:0]const u8,
+};
+
 pub const MallocFn = *const fn (usize) callconv(.c) ?*anyopaque;
 pub const FreeFn = *const fn (?*anyopaque) callconv(.c) void;
 pub const CbFn = *const fn (i32, ?*anyopaque) callconv(.c) i32;
@@ -57,11 +63,7 @@ pub const Api = struct {
     error_code: *const fn (?[*:0]const u8) callconv(.c) i32,
     strerror: *const fn (i32) callconv(.c) [*:0]const u8,
     last_traceback: *const fn () callconv(.c) [*:0]const u8,
-    Err_ok: *const ?[*:0]const u8,
-    Err_argument: *const ?[*:0]const u8,
-    Err_overflow: *const ?[*:0]const u8,
-    Err_not_found: *const ?[*:0]const u8,
-    Err_memory: *const ?[*:0]const u8,
+    Error: *const Errors,
 };
 
 fn cstr(buf: []const u8) []const u8 {
@@ -99,11 +101,9 @@ fn parsePoint(s: []const u8) !Point {
 }
 
 fn selectErrConst(api: *const Api, name: []const u8) ?[*:0]const u8 {
-    if (std.mem.eql(u8, name, "ok")) return api.Err_ok.*;
-    if (std.mem.eql(u8, name, "argument")) return api.Err_argument.*;
-    if (std.mem.eql(u8, name, "overflow")) return api.Err_overflow.*;
-    if (std.mem.eql(u8, name, "not_found")) return api.Err_not_found.*;
-    if (std.mem.eql(u8, name, "memory")) return api.Err_memory.*;
+    if (std.mem.eql(u8, name, "ok")) return api.Error.ok;
+    if (std.mem.eql(u8, name, "argument")) return api.Error.argument;
+    if (std.mem.eql(u8, name, "overflow")) return api.Error.overflow;
     return null;
 }
 
@@ -327,6 +327,15 @@ fn runCase(api: *const Api, kind: []const u8, args: []const u8, out: []u8) ![]co
         const p = selectErrConst(api, a[0]);
         const s = if (p) |q| std.mem.span(q) else "NULL";
         return std.fmt.bufPrint(out, "{s}:{s}", .{ a[0], s });
+    }
+    if (std.mem.eql(u8, kind, "err_identity")) {
+        var zbuf: [256]u8 = undefined;
+        const z = try zstr(a[0], &zbuf);
+        var v: i32 = 0;
+        const exc = api.parse_i32_exc(z.ptr, &v);
+        const want = selectErrConst(api, a[1]);
+        const same = exc != null and want != null and exc.? == want.?;
+        return std.fmt.bufPrint(out, "{d}", .{@intFromBool(same)});
     }
     if (std.mem.eql(u8, kind, "error_code")) {
         return std.fmt.bufPrint(out, "{d}", .{api.error_code(selectErrConst(api, a[0]))});

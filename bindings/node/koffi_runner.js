@@ -14,6 +14,11 @@ koffi.struct("cex_demo_padded_t", {
   d: "double",
   name: "char[16]",
 });
+koffi.struct("cex_demo_errors_t", {
+  ok: "void *",
+  argument: "void *",
+  overflow: "void *",
+});
 koffi.enumeration("cex_demo_mode_t", {
   CEX_DEMO_MODE_A: 0,
   CEX_DEMO_MODE_B: 1,
@@ -94,8 +99,8 @@ function loadLib(path) {
 }
 
 function errConst(lib, name) {
-  const sym = lib.symbol("cex_demo_Err_" + name);
-  return koffi.decode(sym, "void *");
+  const errs = koffi.decode(lib.symbol("cex_demo_Error"), "cex_demo_errors_t");
+  return errs[name];
 }
 
 function strOrNull(ptr) {
@@ -240,6 +245,13 @@ function call(ctx, kind, args) {
     case "err_const": {
       const p = errConst(lib, a[0]);
       return `${a[0]}:${strOrNull(p)}`;
+    }
+    case "err_identity": {
+      const out = koffi.alloc("int32_t", 1);
+      const exc = fn.parse_exc(a[0], out);
+      const want = errConst(lib, a[1]);
+      const addr = (p) => (p == null ? 0n : BigInt(p));
+      return addr(exc) === addr(want) ? "1" : "0";
     }
     case "error_code":
       return String(fn.error_code(errConst(lib, a[0])));

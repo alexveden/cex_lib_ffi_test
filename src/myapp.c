@@ -1,3 +1,4 @@
+#define CEX_DEMO_PREBUILT
 #include "lib/cex_demo.c"
 
 int

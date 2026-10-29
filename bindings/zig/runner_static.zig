@@ -35,11 +35,7 @@ extern fn cex_demo_error_code(exc: ?[*:0]const u8) callconv(.c) i32;
 extern fn cex_demo_strerror(code: i32) callconv(.c) [*:0]const u8;
 extern fn cex_demo_last_traceback() callconv(.c) [*:0]const u8;
 
-extern var cex_demo_Err_ok: ?[*:0]const u8;
-extern var cex_demo_Err_argument: ?[*:0]const u8;
-extern var cex_demo_Err_overflow: ?[*:0]const u8;
-extern var cex_demo_Err_not_found: ?[*:0]const u8;
-extern var cex_demo_Err_memory: ?[*:0]const u8;
+extern var cex_demo_Error: common.Errors;
 
 pub fn main(init: std.process.Init.Minimal) !void {
     var it = init.args.iterate();
@@ -80,11 +76,7 @@ pub fn main(init: std.process.Init.Minimal) !void {
         .error_code = &cex_demo_error_code,
         .strerror = &cex_demo_strerror,
         .last_traceback = &cex_demo_last_traceback,
-        .Err_ok = &cex_demo_Err_ok,
-        .Err_argument = &cex_demo_Err_argument,
-        .Err_overflow = &cex_demo_Err_overflow,
-        .Err_not_found = &cex_demo_Err_not_found,
-        .Err_memory = &cex_demo_Err_memory,
+        .Error = &cex_demo_Error,
     };
 
     try common.dispatch(&api, cases);

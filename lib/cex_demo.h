@@ -36,6 +36,13 @@ typedef enum
 
 typedef struct
 {
+    const char* ok;
+    const char* argument;
+    const char* overflow;
+} cex_demo_errors_t;
+
+typedef struct
+{
     uint32_t major;
     uint32_t minor;
     uint32_t patch;
@@ -114,11 +121,11 @@ CEX_DEMO_API const char* cex_demo_parse_i32_exc(const char* s, int32_t* out);
 CEX_DEMO_API int32_t cex_demo_parse_i32_status(const char* s, int32_t* out);
 CEX_DEMO_API int32_t cex_demo_parse_i32_hybrid(const char* s, int32_t* out, const char** out_exc);
 
-CEX_DEMO_API extern const char* const cex_demo_Err_ok;
-CEX_DEMO_API extern const char* const cex_demo_Err_argument;
-CEX_DEMO_API extern const char* const cex_demo_Err_overflow;
-CEX_DEMO_API extern const char* const cex_demo_Err_not_found;
-CEX_DEMO_API extern const char* const cex_demo_Err_memory;
+#if defined(CEX_DEMO_PREBUILT)
+CEX_DEMO_API extern cex_demo_errors_t cex_demo_Error;
+#else
+CEX_DEMO_API extern const cex_demo_errors_t cex_demo_Error;
+#endif
 
 CEX_DEMO_API const char* cex_demo_error_string(const char* exc);
 CEX_DEMO_API int32_t cex_demo_error_code(const char* exc);
@@ -128,6 +135,10 @@ CEX_DEMO_API const char* cex_demo_last_traceback(void);
 
 #ifdef __cplusplus
 }
+#endif
+
+#if !defined(CEX_DEMO_BUILD)
+#    define Error cex_demo_Error
 #endif
 
 #endif

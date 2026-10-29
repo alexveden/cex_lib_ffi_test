@@ -11,12 +11,16 @@ def _s(ptr):
     return "NULL" if ptr == ffi.NULL else ffi.string(ptr).decode()
 
 
+def _addr(ptr):
+    return int(ffi.cast("uintptr_t", ptr))
+
+
 class Backend:
     def load(self, _path):
         self.libc = ffi.dlopen(None)
 
     def err_const(self, name):
-        return getattr(lib, "cex_demo_Err_" + name)
+        return getattr(lib.cex_demo_Error, name)
 
     def call(self, kind, args):
         a = args.split("|") if args else []
@@ -137,6 +141,10 @@ class Backend:
         if kind == "err_const":
             p = self.err_const(a[0])
             return f"{a[0]}:{_s(p)}"
+        if kind == "err_identity":
+            v = ffi.new("int32_t *")
+            exc = lib.cex_demo_parse_i32_exc(a[0].encode(), v)
+            return "1" if _addr(exc) == _addr(self.err_const(a[1])) else "0"
         if kind == "error_code":
             return str(lib.cex_demo_error_code(self.err_const(a[0])))
         if kind == "strerror":

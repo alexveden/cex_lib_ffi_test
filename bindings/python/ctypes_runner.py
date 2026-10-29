@@ -45,6 +45,14 @@ def _bytes(p):
     return ctypes.string_at(p).decode() if p else "NULL"
 
 
+class Errors(ctypes.Structure):
+    _fields_ = [
+        ("ok", c_void_p),
+        ("argument", c_void_p),
+        ("overflow", c_void_p),
+    ]
+
+
 class Backend:
     def load(self, path):
         self.lib = ctypes.CDLL(path)
@@ -54,6 +62,7 @@ class Backend:
         self.libc.free.restype = None
         self.libc.free.argtypes = [c_void_p]
         self._declare()
+        self.errors = Errors.in_dll(self.lib, "cex_demo_Error")
 
     def _declare(self):
         L = self.lib
@@ -123,7 +132,7 @@ class Backend:
         L.cex_demo_last_traceback.restype = c_char_p
 
     def err_const(self, name):
-        return c_void_p.in_dll(self.lib, "cex_demo_Err_" + name).value
+        return getattr(self.errors, name)
 
     def call(self, kind, args):
         a = args.split("|") if args else []
@@ -241,6 +250,10 @@ class Backend:
         if kind == "err_const":
             p = self.err_const(a[0])
             return f"{a[0]}:{_bytes(p)}"
+        if kind == "err_identity":
+            v = c_int32(0)
+            exc = L.cex_demo_parse_i32_exc(a[0].encode(), ctypes.byref(v))
+            return "1" if exc == self.err_const(a[1]) else "0"
         if kind == "error_code":
             return str(L.cex_demo_error_code(self.err_const(a[0])))
         if kind == "strerror":

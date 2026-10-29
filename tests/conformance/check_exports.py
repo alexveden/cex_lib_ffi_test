@@ -5,7 +5,7 @@ import subprocess
 import sys
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-EXPECTED = 38
+EXPECTED = 34
 
 
 def find_tool(base):

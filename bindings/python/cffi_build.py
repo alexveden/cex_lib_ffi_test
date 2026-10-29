@@ -12,6 +12,7 @@ ffi.cdef(
 typedef struct { uint32_t major; uint32_t minor; uint32_t patch; uint32_t struct_size; } cex_demo_version_t;
 typedef struct { int32_t x; int32_t y; } cex_demo_point_t;
 typedef struct { uint8_t tag; int64_t big; double d; char name[16]; } cex_demo_padded_t;
+typedef struct { const char *ok; const char *argument; const char *overflow; } cex_demo_errors_t;
 typedef enum { CEX_DEMO_MODE_A=0, CEX_DEMO_MODE_B=1, CEX_DEMO_MODE_C=2 } cex_demo_mode_t;
 typedef struct cex_demo_counter cex_demo_counter_t;
 typedef int32_t (*cex_demo_cb_fn)(int32_t value, void *user_data);
@@ -49,11 +50,7 @@ int32_t cex_demo_call_on_thread(cex_demo_cb_fn cb, void *user_data, int32_t valu
 const char *cex_demo_parse_i32_exc(const char *s, int32_t *out);
 int32_t cex_demo_parse_i32_status(const char *s, int32_t *out);
 int32_t cex_demo_parse_i32_hybrid(const char *s, int32_t *out, const char **out_exc);
-extern const char *cex_demo_Err_ok;
-extern const char *cex_demo_Err_argument;
-extern const char *cex_demo_Err_overflow;
-extern const char *cex_demo_Err_not_found;
-extern const char *cex_demo_Err_memory;
+extern const cex_demo_errors_t cex_demo_Error;
 const char *cex_demo_error_string(const char *exc);
 int32_t cex_demo_error_code(const char *exc);
 const char *cex_demo_strerror(int32_t code);

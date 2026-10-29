@@ -26,11 +26,25 @@ struct cex_demo_counter
     int32_t value;
 };
 
-CEX_DEMO_API const char* const cex_demo_Err_ok = NULL;
-CEX_DEMO_API const char* const cex_demo_Err_argument = "ArgumentError";
-CEX_DEMO_API const char* const cex_demo_Err_overflow = "OverflowError";
-CEX_DEMO_API const char* const cex_demo_Err_not_found = "NotFoundError";
-CEX_DEMO_API const char* const cex_demo_Err_memory = "MemoryError";
+#if defined(CEX_DEMO_PREBUILT)
+CEX_DEMO_API cex_demo_errors_t cex_demo_Error;
+
+__attribute__((constructor)) static void
+cex_demo__init_errors(void)
+{
+    cex_demo_Error = (cex_demo_errors_t){
+        .ok = Error.ok,
+        .argument = Error.argument,
+        .overflow = Error.overflow,
+    };
+}
+#else
+CEX_DEMO_API const cex_demo_errors_t cex_demo_Error = {
+    .ok = Error.ok,
+    .argument = Error.argument,
+    .overflow = Error.overflow,
+};
+#endif
 
 cex_demo_version_t
 cex_demo_version(void)
@@ -289,11 +303,9 @@ cex_demo_call_on_thread(cex_demo_cb_fn cb, void* user_data, int32_t value)
 const char*
 cex_demo_parse_i32_exc(const char* s, int32_t* out)
 {
-    if (!s || !out) { return cex_demo_Err_argument; }
+    if (!s || !out) { return cex_demo_Error.argument; }
     i32 v = 0;
     Exc err = str.convert.to_i32((char*)s, &v);
-    if (err == Error.argument) { return cex_demo_Err_argument; }
-    if (err == Error.overflow) { return cex_demo_Err_overflow; }
     if (err) { return err; }
     *out = (int32_t)v;
     return NULL;
@@ -323,10 +335,8 @@ int32_t
 cex_demo_error_code(const char* exc)
 {
     if (!exc) { return CEX_DEMO_ERR_OK; }
-    if (exc == cex_demo_Err_argument) { return CEX_DEMO_ERR_ARGUMENT; }
-    if (exc == cex_demo_Err_overflow) { return CEX_DEMO_ERR_OVERFLOW; }
-    if (exc == cex_demo_Err_not_found) { return CEX_DEMO_ERR_NOT_FOUND; }
-    if (exc == cex_demo_Err_memory) { return CEX_DEMO_ERR_MEMORY; }
+    if (exc == cex_demo_Error.argument) { return CEX_DEMO_ERR_ARGUMENT; }
+    if (exc == cex_demo_Error.overflow) { return CEX_DEMO_ERR_OVERFLOW; }
     return CEX_DEMO_ERR_UNKNOWN;
 }
 

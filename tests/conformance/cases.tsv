@@ -40,7 +40,9 @@ parse_hybrid_bad	parse_hybrid	abc	1:ArgumentError
 err_const_ok	err_const	ok	ok:NULL
 err_const_argument	err_const	argument	argument:ArgumentError
 err_const_overflow	err_const	overflow	overflow:OverflowError
+err_identity_argument	err_identity	abc|argument	1
+err_identity_overflow	err_identity	2147483648|overflow	1
 error_code_argument	error_code	argument	1
-error_code_memory	error_code	memory	4
+error_code_overflow	error_code	overflow	2
 strerror_overflow	strerror	2	2:OverflowError
 traceback_contains	traceback_contains	abc	1
