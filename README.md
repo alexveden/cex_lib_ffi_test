@@ -113,6 +113,8 @@ callback cannot run. This is a real limitation, not a bug in the library.
 - `Exc` is just `char*`; pointer identity is ABI-trivial but most high-level FFI
   layers convert `char*` to a string and lose the address. Bindings must keep
   pointer-returning functions as `void*`/`c_void_p` to compare identity.
+  The C header names it `cex_demo_exc_t` (a `const char*` typedef) so it does
+  not collide with cex's own `Exc` (`typedef char* Exc`).
 - `Error` is a public macro alias for `cex_demo_Error`; consumers must not
   include both `cex.h` and `cex_demo.h` in one translation unit.
 - Only `ok`, `argument`, and `overflow` are exported. Other CEX errors still

@@ -151,6 +151,15 @@ test$case(cex_demo_errors)
     return EOK;
 }
 
+test$case(cex_demo_exc_typedef)
+{
+    cex_demo_exc_t demo_exc = NULL;
+    Exc cex_exc = EOK;
+    tassert(demo_exc == NULL);
+    tassert(cex_exc == EOK);
+    return EOK;
+}
+
 test$case(cex_demo_version)
 {
     cex_demo_version_t v = cex_demo_version();

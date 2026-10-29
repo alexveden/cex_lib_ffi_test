@@ -23,6 +23,8 @@
 extern "C" {
 #endif
 
+typedef const char* cex_demo_exc_t;
+
 typedef enum
 {
     CEX_DEMO_ERR_OK = 0,
@@ -36,9 +38,9 @@ typedef enum
 
 typedef struct
 {
-    const char* ok;
-    const char* argument;
-    const char* overflow;
+    cex_demo_exc_t ok;
+    cex_demo_exc_t argument;
+    cex_demo_exc_t overflow;
 } cex_demo_errors_t;
 
 typedef struct
@@ -117,9 +119,9 @@ CEX_DEMO_API int32_t cex_demo_apply(int32_t* arr, size_t len, cex_demo_cb_fn cb,
 CEX_DEMO_API int32_t cex_demo_call_on_thread(cex_demo_cb_fn cb, void* user_data, int32_t value);
 
 /* Raw cex Exc: NULL means success, error strings are borrowed and never freed. */
-CEX_DEMO_API const char* cex_demo_parse_i32_exc(const char* s, int32_t* out);
+CEX_DEMO_API cex_demo_exc_t cex_demo_parse_i32_exc(const char* s, int32_t* out);
 CEX_DEMO_API int32_t cex_demo_parse_i32_status(const char* s, int32_t* out);
-CEX_DEMO_API int32_t cex_demo_parse_i32_hybrid(const char* s, int32_t* out, const char** out_exc);
+CEX_DEMO_API int32_t cex_demo_parse_i32_hybrid(const char* s, int32_t* out, cex_demo_exc_t* out_exc);
 
 #if defined(CEX_DEMO_PREBUILT)
 CEX_DEMO_API extern cex_demo_errors_t cex_demo_Error;
@@ -127,8 +129,8 @@ CEX_DEMO_API extern cex_demo_errors_t cex_demo_Error;
 CEX_DEMO_API extern const cex_demo_errors_t cex_demo_Error;
 #endif
 
-CEX_DEMO_API const char* cex_demo_error_string(const char* exc);
-CEX_DEMO_API int32_t cex_demo_error_code(const char* exc);
+CEX_DEMO_API const char* cex_demo_error_string(cex_demo_exc_t exc);
+CEX_DEMO_API int32_t cex_demo_error_code(cex_demo_exc_t exc);
 CEX_DEMO_API const char* cex_demo_strerror(int32_t code);
 /* Thread-local. Empty when the calling thread has no recorded error. */
 CEX_DEMO_API const char* cex_demo_last_traceback(void);
