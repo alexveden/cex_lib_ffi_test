@@ -9,43 +9,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-      - uses: mlugg/setup-zig@v2
-        with:
-          version: 0.16.0
       - name: bootstrap cex
         run: cc cex.c -o cex
-      - name: native conformance
-        run: bash tests/conformance/run_all.sh
-      - name: cross artifacts
-        run: ./cex build-lib --target=all
-      - name: install llvm tools
-        run: sudo apt-get update && sudo apt-get install -y llvm
-      - name: export check
-        run: python3 tests/conformance/check_exports.py
+      - name: native tests
+        run: ./cex test run all
+      - name: build library
+        run: ./cex build-lib
 
   macos:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-      - uses: mlugg/setup-zig@v2
-        with:
-          version: 0.16.0
       - name: bootstrap cex
         run: cc cex.c -o cex
-      - name: native conformance
-        run: bash tests/conformance/run_all.sh
+      - name: native tests
+        run: ./cex test run all
+      - name: build library
+        run: ./cex build-lib
 
   windows:
     runs-on: windows-latest
@@ -60,9 +40,9 @@ jobs:
           update: true
           install: >-
             mingw-w64-x86_64-gcc
-            mingw-w64-x86_64-python
-            mingw-w64-x86_64-nodejs
       - name: bootstrap cex
         run: cc cex.c -o cex
-      - name: native conformance
-        run: SKIP_CFFI=1 SKIP_ZIG=1 bash tests/conformance/run_all.sh
+      - name: native tests
+        run: ./cex test run all
+      - name: build library
+        run: ./cex build-lib
