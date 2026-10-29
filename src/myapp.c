@@ -1,11 +1,13 @@
-#define CEX_IMPLEMENTATION
-#include "cex.h"
-#include "lib/mylib.c"  /* NOTE: include .c to make unity build! */
+#include "lib/cex_demo.c"
 
-int main(int argc, char** argv){
+int
+main(int argc, char** argv)
+{
     (void)argc;
     (void)argv;
-    io.printf("MOCCA - Make Old C Cexy Again!\n");
-    io.printf("1 + 2 = %d\n", mylib_add(1, 2));
+    int32_t nums[] = { 1, 2, 3 };
+    io.printf("cex_demo v%u.%u.%u\n", cex_demo_version().major, cex_demo_version().minor, cex_demo_version().patch);
+    io.printf("sum(1,2,3) = %lld\n", (long long)cex_demo_sum_i32(nums, 3));
+    io.printf("1 + 2 = %d\n", cex_demo_sum_i32((int32_t[]){ 1, 2 }, 2));
     return 0;
 }
