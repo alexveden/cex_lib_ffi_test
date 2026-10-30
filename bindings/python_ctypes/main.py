@@ -8,7 +8,11 @@ class Request(ctypes.Structure):
 
 
 class Errors(ctypes.Structure):
-    _fields_ = [("ok", ctypes.c_void_p), ("argument", ctypes.c_void_p)]
+    _fields_ = [
+        ("ok", ctypes.c_void_p),
+        ("argument", ctypes.c_void_p),
+        ("overflow", ctypes.c_void_p),
+    ]
 
 
 def library_path():
@@ -28,6 +32,8 @@ def load():
     _lib = ctypes.CDLL(library_path())
     _lib.cex_demo_run.argtypes = [ctypes.POINTER(Request)]
     _lib.cex_demo_run.restype = ctypes.c_void_p
+    _lib.cex_demo_traceback.argtypes = [ctypes.c_char_p, ctypes.c_size_t]
+    _lib.cex_demo_traceback.restype = ctypes.c_void_p
     _errors = Errors.in_dll(_lib, "cex_demo_Error")
     return _lib
 
@@ -65,6 +71,23 @@ def main():
         print("NULL request returned unexpected error", file=sys.stderr)
         return 1
     print(f"error={error_text(exc)}")
+
+    if lib.cex_demo_traceback(None, 0) != _errors.argument:
+        print("NULL traceback buffer returned unexpected error", file=sys.stderr)
+        return 1
+    tiny = ctypes.create_string_buffer(8)
+    if lib.cex_demo_traceback(tiny, len(tiny)) != _errors.overflow:
+        print("small traceback buffer returned unexpected error", file=sys.stderr)
+        return 1
+    tb = ctypes.create_string_buffer(512)
+    if lib.cex_demo_traceback(tb, len(tb)) != _errors.ok:
+        print("traceback failed", file=sys.stderr)
+        return 1
+    text = tb.value.decode()
+    if "cex_demo__validate_request" not in text or "cex_demo_run" not in text:
+        print("traceback missing frames", file=sys.stderr)
+        return 1
+    print(f"traceback={text}", end="")
 
     try:
         run(None)

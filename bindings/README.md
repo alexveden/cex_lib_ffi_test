@@ -9,14 +9,19 @@ ergonomics examples, not a test suite.
   `python_ctypes`, `python_cffi`.
 - Contains only the example source. `./cex bindings <name>` builds the library,
   builds the example if needed, and runs it.
-- The example prints exactly:
+- The example prints:
   ```
   value=42
   error=ArgumentError
+  traceback=#0 (cex_demo.c:NN cex_demo__validate_request()) [ArgumentError] request is NULL
+  #1 (cex_demo.c:NN cex_demo_run()) [ArgumentError] cex_demo__validate_request(req)
   ```
-  and exits non-zero if either assertion fails.
-- Assertions compare `cex_demo_exc_t` by pointer against `cex_demo_Error.ok` and
-  `cex_demo_Error.argument`. The string is printed for display only.
+  and exits non-zero if any assertion fails. The traceback is asserted by
+  substring (`cex_demo__validate_request`, `cex_demo_run`), not exact line
+  numbers.
+- Assertions compare `cex_demo_exc_t` by pointer against `cex_demo_Error.ok`,
+  `cex_demo_Error.argument`, and `cex_demo_Error.overflow`. The string is
+  printed for display only.
 - Static bindings link the platform static library under `build/lib/`. Dynamic
   bindings load the platform shared library from `build/lib/`.
 - The example shows both the raw FFI call and a thin, idiomatic wrapper.

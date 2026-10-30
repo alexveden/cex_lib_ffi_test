@@ -10,6 +10,7 @@ function library_path() {
 
 const lib = koffi.load(library_path());
 const run_raw = lib.func("void *cex_demo_run(cex_demo_request_t *req)");
+const traceback_raw = lib.func("void *cex_demo_traceback(char *buf, size_t size)");
 
 // koffi has no API for exported data symbols. cex_demo_Error.ok is NULL and
 // cex_demo_run(NULL) returns the same address as cex_demo_Error.argument.
@@ -17,6 +18,18 @@ const argument_error = run_raw(null);
 
 function error_text(exc) {
     return koffi.decode(exc, "char", -1);
+}
+
+function buffer_text(buf) {
+    const end = buf.indexOf(0);
+    return buf.toString("utf8", 0, end === -1 ? buf.length : end);
+}
+
+function traceback() {
+    const buf = Buffer.alloc(512);
+    const exc = traceback_raw(buf, buf.length);
+    if (exc !== null) throw new Error(error_text(exc));
+    return buffer_text(buf);
 }
 
 function run(value) {
@@ -56,6 +69,26 @@ function main() {
         return 1;
     }
     console.log(`error=${error_text(null_exc)}`);
+
+    if (traceback_raw(null, 0) !== argument_error) {
+        console.error("NULL traceback buffer returned unexpected error");
+        return 1;
+    }
+    const overflow_exc = traceback_raw(Buffer.alloc(1), 1);
+    if (overflow_exc === null || overflow_exc === argument_error) {
+        console.error("small traceback buffer returned unexpected error");
+        return 1;
+    }
+    if (traceback_raw(Buffer.alloc(1), 1) !== overflow_exc) {
+        console.error("small traceback buffer returned inconsistent error");
+        return 1;
+    }
+    const tb = traceback();
+    if (!tb.includes("cex_demo__validate_request") || !tb.includes("cex_demo_run")) {
+        console.error("traceback missing frames");
+        return 1;
+    }
+    process.stdout.write(`traceback=${tb}`);
 
     try {
         run(null);

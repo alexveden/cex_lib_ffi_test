@@ -10,9 +10,10 @@ ffi.cdef(
     """
 typedef struct { int32_t value; } cex_demo_request_t;
 typedef const char *cex_demo_exc_t;
-typedef struct { const char *ok; const char *argument; } cex_demo_errors_t;
+typedef struct { const char *ok; const char *argument; const char *overflow; } cex_demo_errors_t;
 extern const cex_demo_errors_t cex_demo_Error;
 cex_demo_exc_t cex_demo_run(cex_demo_request_t *req);
+cex_demo_exc_t cex_demo_traceback(char *buf, size_t size);
 """
 )
 

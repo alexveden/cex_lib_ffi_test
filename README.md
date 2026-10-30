@@ -1,6 +1,6 @@
 # cex_demo
 
-Minimal CEX-built static/shared library with one exported function.
+Minimal CEX-built static/shared library with two exported functions.
 
 ## API
 
@@ -10,8 +10,12 @@ Minimal CEX-built static/shared library with one exported function.
 - `cex_demo_run(cex_demo_request_t* req)` — returns `cex_demo_exc_t`
   (`const char*`), where `NULL` means success. A `NULL` request returns an error;
   otherwise `req->value` is incremented.
-- `cex_demo_Error` — exported struct with `ok` (`NULL`) and `argument` pointers.
-  Compare errors by pointer against these fields; the string is display-only.
+- `cex_demo_traceback(char* buf, size_t buf_size)` — formats the recorded CEX
+  traceback into `buf` (NUL-terminated). Returns `ok` on success, `argument` for
+  a `NULL`/zero-size buffer, and `overflow` when the traceback does not fit.
+- `cex_demo_Error` — exported struct with `ok` (`NULL`), `argument`, and
+  `overflow` pointers. Compare errors by pointer against these fields; the
+  string is display-only.
 
 ## Build and test
 
@@ -40,5 +44,6 @@ Eight language bindings live under `bindings/`: `c_static`, `cpp_static`,
 
 `./cex bindings` builds the library once, runs every binding, and summarizes
 pass/fail. Each example compares `cex_demo_exc_t` by pointer against
-`cex_demo_Error.ok` / `.argument`. See `bindings/README.md` for the per-binding
+`cex_demo_Error.ok` / `.argument` / `.overflow`, then prints the traceback
+returned by `cex_demo_traceback`. See `bindings/README.md` for the per-binding
 contract and how to add a language.

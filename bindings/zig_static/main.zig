@@ -47,6 +47,29 @@ pub fn main() !void {
     }
     print("error={s}\n", .{std.mem.span(null_exc)});
 
+    if (c.cex_demo_traceback(null, 0) != c.cex_demo_Error.argument) {
+        print("NULL traceback buffer returned unexpected error\n", .{});
+        return error.UnexpectedError;
+    }
+    var tiny: [8]u8 = undefined;
+    if (c.cex_demo_traceback(&tiny, tiny.len) != c.cex_demo_Error.overflow) {
+        print("small traceback buffer returned unexpected error\n", .{});
+        return error.UnexpectedError;
+    }
+    var tb: [512]u8 = undefined;
+    if (c.cex_demo_traceback(&tb, tb.len) != c.cex_demo_Error.ok) {
+        print("traceback failed\n", .{});
+        return error.UnexpectedError;
+    }
+    const text = std.mem.sliceTo(&tb, 0);
+    if (std.mem.indexOf(u8, text, "cex_demo__validate_request") == null or
+        std.mem.indexOf(u8, text, "cex_demo_run") == null)
+    {
+        print("traceback missing frames\n", .{});
+        return error.UnexpectedError;
+    }
+    print("traceback={s}", .{text});
+
     if (run(null)) |_| {
         print("wrapper NULL request unexpectedly succeeded\n", .{});
         return error.UnexpectedSuccess;

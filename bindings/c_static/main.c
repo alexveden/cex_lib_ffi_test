@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "cex_demo.h"
 
@@ -29,5 +30,25 @@ main(void)
         return 1;
     }
     printf("error=%s\n", exc);
+
+    if (cex_demo_traceback(NULL, 0) != Error.argument) {
+        fprintf(stderr, "NULL traceback buffer returned unexpected error\n");
+        return 1;
+    }
+    char tiny[8];
+    if (cex_demo_traceback(tiny, sizeof tiny) != Error.overflow) {
+        fprintf(stderr, "small traceback buffer returned unexpected error\n");
+        return 1;
+    }
+    char traceback[512];
+    if (cex_demo_traceback(traceback, sizeof traceback) != Error.ok) {
+        fprintf(stderr, "traceback failed\n");
+        return 1;
+    }
+    if (!strstr(traceback, "cex_demo__validate_request") || !strstr(traceback, "cex_demo_run")) {
+        fprintf(stderr, "traceback missing frames: %s", traceback);
+        return 1;
+    }
+    printf("traceback=%s", traceback);
     return 0;
 }

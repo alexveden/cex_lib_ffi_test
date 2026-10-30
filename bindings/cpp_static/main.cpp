@@ -1,7 +1,9 @@
+#include <array>
 #include <cstdint>
 #include <cstdio>
 #include <optional>
 #include <stdexcept>
+#include <string>
 
 #include "cex_demo.h"
 
@@ -16,6 +18,16 @@ run(std::optional<int32_t> value)
     if (exc == cex_demo_Error.argument) { throw std::invalid_argument(exc); }
     if (exc != cex_demo_Error.ok) { throw std::runtime_error(exc); }
     return req.value;
+}
+
+std::string
+traceback()
+{
+    std::array<char, 512> buf{};
+    cex_demo_exc_t exc = cex_demo_traceback(buf.data(), buf.size());
+    if (exc == cex_demo_Error.argument) { throw std::invalid_argument(exc); }
+    if (exc != cex_demo_Error.ok) { throw std::runtime_error(exc); }
+    return std::string(buf.data());
 }
 
 } // namespace demo
@@ -42,6 +54,23 @@ main()
         return 1;
     }
     std::printf("error=%s\n", exc);
+
+    if (cex_demo_traceback(nullptr, 0) != cex_demo_Error.argument) {
+        std::fprintf(stderr, "NULL traceback buffer returned unexpected error\n");
+        return 1;
+    }
+    std::array<char, 8> tiny{};
+    if (cex_demo_traceback(tiny.data(), tiny.size()) != cex_demo_Error.overflow) {
+        std::fprintf(stderr, "small traceback buffer returned unexpected error\n");
+        return 1;
+    }
+    std::string traceback = demo::traceback();
+    if (traceback.find("cex_demo__validate_request") == std::string::npos ||
+        traceback.find("cex_demo_run") == std::string::npos) {
+        std::fprintf(stderr, "traceback missing frames: %s", traceback.c_str());
+        return 1;
+    }
+    std::printf("traceback=%s", traceback.c_str());
 
     try {
         demo::run(std::nullopt);
