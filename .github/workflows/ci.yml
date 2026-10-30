@@ -33,7 +33,7 @@ jobs:
       - name: bootstrap cex
         run: cc cex.c -o cex
       - name: bindings
-        run: bash run_bindings.sh
+        run: ./cex bindings all
 
   macos:
     runs-on: macos-latest

@@ -19,9 +19,11 @@ Minimal CEX-built static/shared library with one exported function.
 cc cex.c -o cex
 ./cex test run all
 ./cex build-lib
+./cex bindings
 ```
 
 `./cex build-lib` writes `build/lib/libcex_demo.a` and the shared library.
+`./cex bindings` builds the library once and runs every binding.
 
 `lib/cex_demo.c` includes `cex.h`; `cex.h` is vendored and must not be edited.
 
@@ -32,10 +34,11 @@ Eight language bindings live under `bindings/`: `c_static`, `cpp_static`,
 `zig_static`. Each is an ergonomics example, not a test suite.
 
 ```sh
-bash run_bindings.sh
+./cex bindings              # all bindings
+./cex bindings c_static     # one binding
 ```
 
-`run_bindings.sh` builds the library once, runs every `bindings/*/run.sh`, and
-summarizes pass/fail. Each example compares `cex_demo_exc_t` by pointer against
+`./cex bindings` builds the library once, runs every binding, and summarizes
+pass/fail. Each example compares `cex_demo_exc_t` by pointer against
 `cex_demo_Error.ok` / `.argument`. See `bindings/README.md` for the per-binding
 contract and how to add a language.

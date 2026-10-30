@@ -7,8 +7,8 @@ ergonomics examples, not a test suite.
 
 - Directory name: `<language>_<mechanism>` (snake_case), e.g. `c_static`,
   `python_ctypes`, `python_cffi`.
-- Contains a `run.sh`, invoked with `bash` and the repo root as cwd. It builds
-  if needed and runs the example.
+- Contains only the example source. `./cex bindings <name>` builds the library,
+  builds the example if needed, and runs it.
 - The example prints exactly:
   ```
   value=42
@@ -17,18 +17,19 @@ ergonomics examples, not a test suite.
   and exits non-zero if either assertion fails.
 - Assertions compare `cex_demo_exc_t` by pointer against `cex_demo_Error.ok` and
   `cex_demo_Error.argument`. The string is printed for display only.
-- Static bindings link `build/lib/libcex_demo.a`. Dynamic bindings load the
-  platform shared library from `build/lib/`.
+- Static bindings link the platform static library under `build/lib/`. Dynamic
+  bindings load the platform shared library from `build/lib/`.
 - The example shows both the raw FFI call and a thin, idiomatic wrapper.
-- No arguments to `run.sh`. cffi may install its dependency into `build/venv`,
-  and koffi into `build/node`, on first run.
+- cffi may install its dependency into `build/venv`, and koffi into
+  `build/node`, on first run.
 
 ## Add a language
 
 1. `mkdir bindings/<language>_<mechanism>`.
-2. Add the example source and a `run.sh` that `cd`s to the repo root.
+2. Add the example source.
 3. Mirror `cex_demo_request_t` and `cex_demo_run` by hand from `lib/cex_demo.h`.
-4. Run `bash run_bindings.sh`; the new directory is discovered automatically.
+4. Add a `bindings__run_*` runner and a `bindings__table` entry in `cex.c`.
+5. Run `./cex bindings <language>_<mechanism>`.
 
 ## Current bindings
 
@@ -43,8 +44,9 @@ ergonomics examples, not a test suite.
 
 ## Notes
 
-- `go_cgo`, `rust_static` and `zig_static` exit 1 with `toolchain not found`
-  when `go`, `cargo` or `zig` is missing; CI installs all three.
+- `go_cgo`, `rust_static` and `zig_static` report `FAIL <name>` with
+  `toolchain not found` when `go`, `cargo` or `zig` is missing; `./cex bindings`
+  continues with the remaining bindings and exits non-zero. CI installs all three.
 - `nodejs_koffi` installs `koffi` into `build/node` from npm on first run.
   koffi cannot read exported data symbols, so the example captures
   `cex_demo_run(NULL)` — the same address as `cex_demo_Error.argument` — and

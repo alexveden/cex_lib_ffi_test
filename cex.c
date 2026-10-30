@@ -14,6 +14,7 @@
 #include "cex.h"
 
 Exception cmd_build_lib(int argc, char** argv, void* user_ctx);
+Exception cmd_bindings(int argc, char** argv, void* user_ctx);
 
 int
 main(int argc, char** argv)
@@ -30,6 +31,9 @@ main(int argc, char** argv)
             cexy$cmd_test, /* feel free to make your own if needed */
             cexy$cmd_app,  /* feel free to make your own if needed */
             { .name = "build-lib", .func = cmd_build_lib, .help = "Custom build command" },
+            { .name = "bindings",
+              .func = cmd_bindings,
+              .help = "Build and run language bindings (all|<name>...)" },
         ),
     };
     if (argparse.parse(&args, argc, argv)) { return 1; }
@@ -154,6 +158,254 @@ cmd_build_lib(int argc, char** argv, void* user_ctx)
     e$ret(os.fs.mkpath(str.fmt(mem$, "%s/x", out_dir)));
     if (want_native) { e$ret(cex_build_lib__native(out_dir)); }
     if (want_cross) { e$ret(cex_build_lib__cross(out_dir)); }
+    return EOK;
+}
+
+typedef struct
+{
+    char* name;
+    Exception (*run)(void);
+} binding_s;
+
+static Exception
+bindings__run_c_static(void)
+{
+    char* out_dir = str.fmt(mem$, "%s/bindings/c_static", cexy$build_dir);
+    e$ret(os.fs.mkpath(out_dir));
+    char* obj = str.fmt(mem$, "%s/main.o", out_dir);
+    char* exe = str.fmt(mem$, "%s/main%s", out_dir, cexy$build_ext_exe);
+    char* lib = str.fmt(mem$, "%s/lib/libcex_demo%s", cexy$build_dir, cexy$build_ext_lib_stat);
+    e$ret(os$cmd(
+        cexy$cc,
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-Ilib",
+        "-c",
+        "bindings/c_static/main.c",
+        "-o",
+        obj
+    ));
+    e$ret(os$cmd(cexy$cc, obj, lib, "-o", exe));
+    return os$cmd(exe);
+}
+
+static Exception
+bindings__run_cpp_static(void)
+{
+    char* out_dir = str.fmt(mem$, "%s/bindings/cpp_static", cexy$build_dir);
+    e$ret(os.fs.mkpath(out_dir));
+    char* obj = str.fmt(mem$, "%s/main.o", out_dir);
+    char* exe = str.fmt(mem$, "%s/main%s", out_dir, cexy$build_ext_exe);
+    char* lib = str.fmt(mem$, "%s/lib/libcex_demo%s", cexy$build_dir, cexy$build_ext_lib_stat);
+    e$ret(os$cmd(
+        "g++",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-std=c++20",
+        "-Ilib",
+        "-c",
+        "bindings/cpp_static/main.cpp",
+        "-o",
+        obj
+    ));
+    e$ret(os$cmd("g++", obj, lib, "-o", exe));
+    return os$cmd(exe);
+}
+
+static Exception
+bindings__run_go_cgo(void)
+{
+    if (!os.cmd.exists("go")) {
+        log$error("go toolchain not found\n");
+        return e$raise(Error.not_found, "go toolchain not found");
+    }
+    char* out_dir = str.fmt(mem$, "%s/bindings/go_cgo", cexy$build_dir);
+    e$ret(os.fs.mkpath(out_dir));
+    char* exe = os.path.absolute(str.fmt(mem$, "%s/main%s", out_dir, cexy$build_ext_exe), mem$);
+    e$ret(os.env.set("CGO_ENABLED", "1"));
+    e$ret(os$cmd("go", "build", "-C", "bindings/go_cgo", "-o", exe, "."));
+    return os$cmd(exe);
+}
+
+static Exception
+bindings__run_nodejs_koffi(void)
+{
+    if (!os.cmd.exists("node")) {
+        log$error("node not found\n");
+        return e$raise(Error.not_found, "node not found");
+    }
+    char* node_dir = str.fmt(mem$, "%s/node", cexy$build_dir);
+    char* node_modules = os.path.absolute(str.fmt(mem$, "%s/node_modules", node_dir), mem$);
+    if (!os.path.exists(str.fmt(mem$, "%s/koffi", node_modules))) {
+        e$ret(os$cmd(
+            "npm",
+            "install",
+            "--prefix",
+            node_dir,
+            "--no-audit",
+            "--no-fund",
+            "--silent",
+            "koffi"
+        ));
+    }
+    e$ret(os.env.set("NODE_PATH", node_modules));
+    return os$cmd("node", "bindings/nodejs_koffi/main.js");
+}
+
+static Exception
+bindings__run_python_cffi(void)
+{
+    char* venv = str.fmt(mem$, "%s/venv", cexy$build_dir);
+    char* py = str.fmt(mem$, "%s/bin/python", venv);
+    char* py_win = str.fmt(mem$, "%s/Scripts/python.exe", venv);
+    if (!os.path.exists(py) && !os.path.exists(py_win)) {
+        if (!os.cmd.exists("python3")) {
+            log$error("python3 not found\n");
+            return e$raise(Error.not_found, "python3 not found");
+        }
+        e$ret(os$cmd("python3", "-m", "venv", venv));
+    }
+    if (os.path.exists(py_win)) { py = py_win; }
+    if (!os.path.exists(py)) {
+        log$error("python venv not found\n");
+        return e$raise(Error.not_found, "python venv not found");
+    }
+    Exc cffi = os$cmd(
+        py,
+        "-c",
+        "import importlib.util,sys; sys.exit(importlib.util.find_spec('cffi') is None)"
+    );
+    if (cffi != EOK) { e$ret(os$cmd(py, "-m", "pip", "install", "--quiet", "cffi", "setuptools")); }
+    e$ret(os$cmd(py, "bindings/python_cffi/build.py"));
+    return os$cmd(py, "bindings/python_cffi/main.py");
+}
+
+static Exception
+bindings__run_python_ctypes(void)
+{
+    if (!os.cmd.exists("python3")) {
+        log$error("python3 not found\n");
+        return e$raise(Error.not_found, "python3 not found");
+    }
+    return os$cmd("python3", "bindings/python_ctypes/main.py");
+}
+
+static Exception
+bindings__run_rust_static(void)
+{
+    if (!os.cmd.exists("cargo")) {
+        log$error("cargo toolchain not found\n");
+        return e$raise(Error.not_found, "cargo toolchain not found");
+    }
+    char* target_dir = os.path.absolute(str.fmt(mem$, "%s/rust", cexy$build_dir), mem$);
+    e$ret(os.env.set("CARGO_TARGET_DIR", target_dir));
+    e$ret(os$cmd(
+        "cargo",
+        "build",
+        "--quiet",
+        "--offline",
+        "--manifest-path",
+        "bindings/rust_static/Cargo.toml"
+    ));
+    char* exe = str.fmt(mem$, "%s/debug/cex_demo_rust_static%s", target_dir, cexy$build_ext_exe);
+    return os$cmd(exe);
+}
+
+static Exception
+bindings__run_zig_static(void)
+{
+    if (!os.cmd.exists("zig")) {
+        log$error("zig toolchain not found\n");
+        return e$raise(Error.not_found, "zig toolchain not found");
+    }
+    char* out_dir = str.fmt(mem$, "%s/bindings/zig_static", cexy$build_dir);
+    e$ret(os.fs.mkpath(out_dir));
+    char* exe = str.fmt(mem$, "%s/main%s", out_dir, cexy$build_ext_exe);
+    char* lib = str.fmt(mem$, "%s/lib/libcex_demo%s", cexy$build_dir, cexy$build_ext_lib_stat);
+    e$ret(os$cmd(
+        "zig",
+        "build-exe",
+        "bindings/zig_static/main.zig",
+        "-lc",
+        "-Ilib",
+        lib,
+        str.fmt(mem$, "-femit-bin=%s", exe)
+    ));
+    return os$cmd(exe);
+}
+
+static binding_s bindings__table[] = {
+    { "c_static", bindings__run_c_static },
+    { "cpp_static", bindings__run_cpp_static },
+    { "go_cgo", bindings__run_go_cgo },
+    { "nodejs_koffi", bindings__run_nodejs_koffi },
+    { "python_cffi", bindings__run_python_cffi },
+    { "python_ctypes", bindings__run_python_ctypes },
+    { "rust_static", bindings__run_rust_static },
+    { "zig_static", bindings__run_zig_static },
+};
+
+static Exception
+bindings__run_entry(binding_s* binding, u32* passed, u32* failed)
+{
+    io.printf("== %s ==\n", binding->name);
+    e$except (err, binding->run()) {
+        io.printf("FAIL %s\n", binding->name);
+        (*failed)++;
+        return err;
+    }
+    io.printf("PASS %s\n", binding->name);
+    (*passed)++;
+    return EOK;
+}
+
+Exception
+cmd_bindings(int argc, char** argv, void* user_ctx)
+{
+    (void)user_ctx;
+    bool run_all = argc < 2;
+    for (int i = 1; i < argc; i++) {
+        if (str.eq(argv[i], "all")) {
+            run_all = true;
+            continue;
+        }
+        bool found = false;
+        for$eachp (b, bindings__table, arr$len(bindings__table)) {
+            if (str.eq(b->name, argv[i])) {
+                found = true;
+                break;
+            }
+        }
+        if (found) { continue; }
+        log$error("unknown binding: %s\n", argv[i]);
+        io.printf("available:");
+        for$eachp (b, bindings__table, arr$len(bindings__table)) { io.printf(" %s", b->name); }
+        io.printf("\n");
+        return e$raise(Error.argument, "unknown binding");
+    }
+
+    char* build_argv[] = { "build-lib", NULL };
+    e$ret(cmd_build_lib(1, build_argv, NULL));
+
+    u32 passed = 0;
+    u32 failed = 0;
+    if (run_all) {
+        for$eachp (b, bindings__table, arr$len(bindings__table)) {
+            e$except (err, bindings__run_entry(b, &passed, &failed)) {}
+        }
+    } else {
+        for (int i = 1; i < argc; i++) {
+            for$eachp (b, bindings__table, arr$len(bindings__table)) {
+                if (!str.eq(b->name, argv[i])) { continue; }
+                e$except (err, bindings__run_entry(b, &passed, &failed)) {}
+                break;
+            }
+        }
+    }
+    io.printf("bindings: passed=%u failed=%u\n", passed, failed);
+    if (failed) { return e$raise(Error.runtime, "bindings failed"); }
     return EOK;
 }
 

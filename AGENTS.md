@@ -8,7 +8,7 @@ function, one native test.
 - `lib/cex_demo.h` — public ABI (`stdint.h` only).
 - `lib/cex_demo.c` — implementation (`CEX_IMPLEMENTATION` + `CEX_DEMO_BUILD`).
 - `tests/test_cex_demo.c` — native tests.
-- `cex.c` — CEX CLI, including the custom `build-lib` command.
+- `cex.c` — CEX CLI, including the custom `build-lib` and `bindings` commands.
 - `cex.h` — vendored CEX library; never edit.
 
 ## Build and test
@@ -17,18 +17,20 @@ function, one native test.
 - `./cex build-lib` builds `build/lib/libcex_demo.a` and the shared library.
 - `./cex test run all` runs the native tests (ASan/UBSan).
 - One case: `./cex test run tests/test_cex_demo.c --filter='cex_demo_run_increments'`.
+- `./cex bindings [all|<name>...]` builds the library once and runs bindings.
 
 ## Bindings
 
 - `bindings/<language>_<mechanism>/` — one ergonomics example per binding.
-- Each dir has a `run.sh` invoked via `bash` from the repo root; it builds and
-  runs the example, which prints `value=42` and `error=ArgumentError`.
-- `bash run_bindings.sh` builds the library once, runs all bindings, and exits
-  non-zero if any fail.
+- Orchestration lives in `cex.c`: each binding has a `bindings__run_*` runner
+  and an entry in `bindings__table`; no per-binding scripts.
+- `./cex bindings` or `./cex bindings all` runs every binding, prints
+  `value=42` and `error=ArgumentError` per example, and exits non-zero if any
+  fail. `./cex bindings <name>...` runs only the named bindings.
 - Current: `c_static`, `cpp_static`, `go_cgo`, `nodejs_koffi`,
   `python_ctypes`, `python_cffi`, `rust_static`, `zig_static`.
-- Add a language: create the dir, mirror the ABI by hand, add `run.sh`;
-  discovery is automatic.
+- Add a language: create the dir, mirror the ABI by hand, add a runner and a
+  table entry in `cex.c`.
 
 ## ABI
 
