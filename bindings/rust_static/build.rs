@@ -11,7 +11,9 @@ fn main() {
     let lib_path = lib_dir.join(lib_name);
 
     println!("cargo:rustc-link-search=native={}", lib_dir.display());
-    if target_os == "windows" {
+    if target_os == "macos" {
+        println!("cargo:rustc-link-arg={}", lib_path.display());
+    } else if target_os == "windows" {
         println!("cargo:rustc-link-lib=static:+verbatim={}", lib_name);
     } else {
         println!("cargo:rustc-link-lib=static=cex_demo");
