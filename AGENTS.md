@@ -28,8 +28,9 @@ functions, one native test.
   `value=42`, `error=ArgumentError`, and a `traceback=` block per example, and
   exits non-zero if any fail. `./cex bindings <name>...` runs only the named
   bindings.
-- Current: `c_static`, `cpp_static`, `go_cgo`, `nodejs_koffi`,
-  `python_ctypes`, `python_cffi`, `rust_static`, `zig_static`.
+- Current: `c_static`, `cpp_static`, `go_cgo`, `nodejs_koffi`, `python_capi`,
+  `python_cffi`, `python_ctypes`, `python_cython`, `rust_static`,
+  `zig_static`.
 - Add a language: create the dir, mirror the ABI by hand, add a runner and a
   table entry in `cex.c`.
 

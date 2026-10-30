@@ -33,9 +33,10 @@ cc cex.c -o cex
 
 ## Bindings
 
-Eight language bindings live under `bindings/`: `c_static`, `cpp_static`,
-`go_cgo`, `nodejs_koffi`, `python_ctypes`, `python_cffi`, `rust_static`, and
-`zig_static`. Each is an ergonomics example, not a test suite.
+Ten language bindings live under `bindings/`: `c_static`, `cpp_static`,
+`go_cgo`, `nodejs_koffi`, `python_capi`, `python_cffi`, `python_ctypes`,
+`python_cython`, `rust_static`, and `zig_static`. Each is an ergonomics example,
+not a test suite.
 
 ```sh
 ./cex bindings              # all bindings
@@ -45,5 +46,6 @@ Eight language bindings live under `bindings/`: `c_static`, `cpp_static`,
 `./cex bindings` builds the library once, runs every binding, and summarizes
 pass/fail. Each example compares `cex_demo_exc_t` by pointer against
 `cex_demo_Error.ok` / `.argument`, then prints the traceback returned by
-`cex_demo_traceback`. See `bindings/README.md` for the per-binding contract and
-how to add a language.
+`cex_demo_traceback`; `python_capi` and `python_cython` assert by exception class
+instead. See `bindings/README.md` for the per-binding contract and how to add a
+language.

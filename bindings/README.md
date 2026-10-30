@@ -21,12 +21,14 @@ ergonomics examples, not a test suite.
   numbers.
 - Assertions compare `cex_demo_exc_t` by pointer against `cex_demo_Error.ok`
   and `cex_demo_Error.argument`. The string is printed for display only.
+  `python_capi` and `python_cython` are the exception: they hide the pointer in C
+  and assert the error by exception class instead.
 - Static bindings link the platform static library under `build/lib/`. Dynamic
   bindings load the platform shared library from `build/lib/`.
 - The example shows one happy-path FFI call, the `NULL`-request error path, and
   the traceback.
-- cffi may install its dependency into `build/venv`, and koffi into
-  `build/node`, on first run.
+- cffi and cython may install their dependencies into `build/venv`, and koffi
+  into `build/node`, on first run.
 
 ## Add a language
 
@@ -43,8 +45,10 @@ ergonomics examples, not a test suite.
 - `cpp_static` — C++ consumer linked against the static archive.
 - `go_cgo` — cgo, static archive via `#cgo LDFLAGS`.
 - `nodejs_koffi` — koffi on the shared library.
+- `python_capi` — CPython C extension, `Request` type and exception classes.
 - `python_ctypes` — `ctypes.CDLL` on the shared library.
 - `python_cffi` — cffi API mode, compiled extension linked against the archive.
+- `python_cython` — Cython `cdef extern` module built by pyximport.
 - `rust_static` — Cargo crate, `build.rs` links the archive.
 - `zig_static` — Zig `@cImport` plus `zig build-exe` linking the archive.
 
@@ -57,3 +61,9 @@ ergonomics examples, not a test suite.
   koffi cannot read exported data symbols, so the example captures
   `cex_demo_run(NULL)` — the same address as `cex_demo_Error.argument` — and
   treats `cex_demo_Error.ok` as `NULL`.
+- `python_capi` needs `python3-config` and the Python development headers, and
+  requires CPython 3.10+ for `PyModule_AddObjectRef`. It compiles with `cc` and
+  has no Python package dependencies.
+- `python_cython` compiles through `pyximport` on import; the runner installs
+  `cython` into `build/venv` on first run and links the archive via
+  `_cex_demo_cython.pyxbld`.

@@ -254,24 +254,87 @@ bindings__run_nodejs_koffi(void)
     return os$cmd("node", "bindings/nodejs_koffi/main.js");
 }
 
+static char*
+bindings__capture(char** args, usize args_len)
+{
+    os_cmd_c cmd = { 0 };
+    e$except (err, os.cmd.create(&cmd, args, args_len, NULL)) { return NULL; }
+    char* out = os.cmd.read_all(&cmd, mem$);
+    e$except (err, os.cmd.wait(&cmd, 1, 0)) { return NULL; }
+    if (!out) { return NULL; }
+    return str.fmt(mem$, "%S", str.slice.strip(str.sstr(out)));
+}
+
 static Exception
-bindings__run_python_cffi(void)
+bindings__ensure_venv(char** py)
 {
     char* venv = str.fmt(mem$, "%s/venv", cexy$build_dir);
-    char* py = str.fmt(mem$, "%s/bin/python", venv);
+    char* py_posix = str.fmt(mem$, "%s/bin/python", venv);
     char* py_win = str.fmt(mem$, "%s/Scripts/python.exe", venv);
-    if (!os.path.exists(py) && !os.path.exists(py_win)) {
+    if (!os.path.exists(py_posix) && !os.path.exists(py_win)) {
         if (!os.cmd.exists("python3")) {
             log$error("python3 not found\n");
             return e$raise(Error.not_found, "python3 not found");
         }
         e$ret(os$cmd("python3", "-m", "venv", venv));
     }
-    if (os.path.exists(py_win)) { py = py_win; }
-    if (!os.path.exists(py)) {
+    *py = os.path.exists(py_win) ? py_win : py_posix;
+    if (!os.path.exists(*py)) {
         log$error("python venv not found\n");
         return e$raise(Error.not_found, "python venv not found");
     }
+    return EOK;
+}
+
+static Exception
+bindings__run_python_capi(void)
+{
+    if (!os.cmd.exists("python3-config")) {
+        log$error("python3-config not found\n");
+        return e$raise(Error.not_found, "python3-config not found");
+    }
+    char* includes = bindings__capture(
+        (char*[]){ "python3-config", "--includes", NULL },
+        3
+    );
+    char* suffix = bindings__capture(
+        (char*[]){ "python3-config", "--extension-suffix", NULL },
+        3
+    );
+    if (!includes || !suffix || !*suffix) {
+        log$error("python3-config query failed\n");
+        return e$raise(Error.not_found, "python3-config query failed");
+    }
+    char* out_dir = str.fmt(mem$, "%s/bindings/python_capi", cexy$build_dir);
+    e$ret(os.fs.mkpath(str.fmt(mem$, "%s/x", out_dir)));
+    char* ext = str.fmt(mem$, "%s/_cex_demo_capi%s", out_dir, suffix);
+    char* lib = str.fmt(mem$, "%s/lib/libcex_demo%s", cexy$build_dir, cexy$build_ext_lib_stat);
+
+    arr$(char*) args = arr$new(args, mem$);
+    arr$pushm(args, cexy$cc, "-Wall", "-Wextra", "-Werror", "-shared", "-fPIC", "-Ilib");
+#if defined(__APPLE__)
+    arr$pushm(args, "-undefined", "dynamic_lookup");
+#endif
+    arr$(char*) parts = str.split(includes, " ", mem$);
+    if (!parts) {
+        log$error("python3-config --includes parse failed\n");
+        return e$raise(Error.runtime, "python3-config --includes parse failed");
+    }
+    for$each (part, parts, arr$len(parts)) {
+        if (*part) { arr$pushm(args, part); }
+    }
+    arr$pushm(args, "bindings/python_capi/main.c", lib, "-o", ext);
+    arr$push(args, NULL);
+    e$ret(os$cmda(args));
+    arr$free(args);
+    return os$cmd("python3", "bindings/python_capi/main.py");
+}
+
+static Exception
+bindings__run_python_cffi(void)
+{
+    char* py = NULL;
+    e$ret(bindings__ensure_venv(&py));
     Exc cffi = os$cmd(
         py,
         "-c",
@@ -290,6 +353,22 @@ bindings__run_python_ctypes(void)
         return e$raise(Error.not_found, "python3 not found");
     }
     return os$cmd("python3", "bindings/python_ctypes/main.py");
+}
+
+static Exception
+bindings__run_python_cython(void)
+{
+    if (!os.cmd.exists("python3")) {
+        log$error("python3 not found\n");
+        return e$raise(Error.not_found, "python3 not found");
+    }
+    char* py = NULL;
+    e$ret(bindings__ensure_venv(&py));
+    if (os$cmd(py, "-c", "import Cython") != EOK) {
+        e$ret(os$cmd(py, "-m", "pip", "install", "--quiet", "cython", "setuptools"));
+    }
+    e$ret(os.fs.mkpath(str.fmt(mem$, "%s/bindings/python_cython/x", cexy$build_dir)));
+    return os$cmd(py, "bindings/python_cython/main.py");
 }
 
 static Exception
@@ -341,8 +420,10 @@ static binding_s bindings__table[] = {
     { "cpp_static", bindings__run_cpp_static },
     { "go_cgo", bindings__run_go_cgo },
     { "nodejs_koffi", bindings__run_nodejs_koffi },
+    { "python_capi", bindings__run_python_capi },
     { "python_cffi", bindings__run_python_cffi },
     { "python_ctypes", bindings__run_python_ctypes },
+    { "python_cython", bindings__run_python_cython },
     { "rust_static", bindings__run_rust_static },
     { "zig_static", bindings__run_zig_static },
 };

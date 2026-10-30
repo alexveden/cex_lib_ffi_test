@@ -1,0 +1,15 @@
+import os
+
+from distutils.extension import Extension
+
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+def make_ext(modname, pyxfilename):
+    return Extension(
+        name=modname,
+        sources=[pyxfilename],
+        include_dirs=[os.path.join(ROOT, "lib")],
+        extra_objects=[os.path.join(ROOT, "build", "lib", "libcex_demo.a")],
+        extra_compile_args=["-fPIC"],
+    )
