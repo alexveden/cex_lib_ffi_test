@@ -101,6 +101,9 @@ static const luaL_Reg module_functions[] = {
     { NULL, NULL },
 };
 
+#if defined(_WIN32)
+__declspec(dllexport)
+#endif
 int
 luaopen_cex_demo(lua_State* L)
 {
