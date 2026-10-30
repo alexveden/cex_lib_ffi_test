@@ -20,8 +20,8 @@ ergonomics examples, not a test suite.
 - Static bindings link `build/lib/libcex_demo.a`. Dynamic bindings load the
   platform shared library from `build/lib/`.
 - The example shows both the raw FFI call and a thin, idiomatic wrapper.
-- No arguments to `run.sh`. cffi may install its dependency into `build/venv` on
-  first run.
+- No arguments to `run.sh`. cffi may install its dependency into `build/venv`,
+  and koffi into `build/node`, on first run.
 
 ## Add a language
 
@@ -33,5 +33,19 @@ ergonomics examples, not a test suite.
 ## Current bindings
 
 - `c_static` — C consumer linked against the static archive.
+- `cpp_static` — C++ consumer, `std::optional`/exception wrapper.
+- `go_cgo` — cgo, static archive via `#cgo LDFLAGS`.
+- `nodejs_koffi` — koffi on the shared library.
 - `python_ctypes` — `ctypes.CDLL` on the shared library.
 - `python_cffi` — cffi API mode, compiled extension linked against the archive.
+- `rust_static` — Cargo crate, `build.rs` links the archive.
+- `zig_static` — Zig `@cImport` plus `zig build-exe` linking the archive.
+
+## Notes
+
+- `go_cgo`, `rust_static` and `zig_static` exit 1 with `toolchain not found`
+  when `go`, `cargo` or `zig` is missing; CI installs all three.
+- `nodejs_koffi` installs `koffi` into `build/node` from npm on first run.
+  koffi cannot read exported data symbols, so the example captures
+  `cex_demo_run(NULL)` — the same address as `cex_demo_Error.argument` — and
+  treats `cex_demo_Error.ok` as `NULL`.

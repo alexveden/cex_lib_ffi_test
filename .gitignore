@@ -4,3 +4,4 @@ compile_flags.txt
 node_modules/
 __pycache__/
 *.pyc
+bindings/rust_static/Cargo.lock

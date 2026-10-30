@@ -1,0 +1,8 @@
+[package]
+name = "cex_demo_rust_static"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "cex_demo_rust_static"
+path = "src/main.rs"

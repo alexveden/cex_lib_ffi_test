@@ -27,8 +27,9 @@ cc cex.c -o cex
 
 ## Bindings
 
-Three language bindings live under `bindings/`: `c_static`, `python_ctypes`, and
-`python_cffi`. Each is an ergonomics example, not a test suite.
+Eight language bindings live under `bindings/`: `c_static`, `cpp_static`,
+`go_cgo`, `nodejs_koffi`, `python_ctypes`, `python_cffi`, `rust_static`, and
+`zig_static`. Each is an ergonomics example, not a test suite.
 
 ```sh
 bash run_bindings.sh

@@ -25,7 +25,8 @@ function, one native test.
   runs the example, which prints `value=42` and `error=ArgumentError`.
 - `bash run_bindings.sh` builds the library once, runs all bindings, and exits
   non-zero if any fail.
-- Current: `c_static`, `python_ctypes`, `python_cffi`.
+- Current: `c_static`, `cpp_static`, `go_cgo`, `nodejs_koffi`,
+  `python_ctypes`, `python_cffi`, `rust_static`, `zig_static`.
 - Add a language: create the dir, mirror the ABI by hand, add `run.sh`;
   discovery is automatic.
 
