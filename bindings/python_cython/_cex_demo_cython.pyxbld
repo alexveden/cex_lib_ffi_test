@@ -3,6 +3,7 @@ import os
 from distutils.extension import Extension
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+LIB = os.path.join(ROOT, "build", "lib", "libcex_demo.lib" if os.name == "nt" else "libcex_demo.a")
 
 
 def make_ext(modname, pyxfilename):
@@ -10,6 +11,7 @@ def make_ext(modname, pyxfilename):
         name=modname,
         sources=[pyxfilename],
         include_dirs=[os.path.join(ROOT, "lib")],
-        extra_objects=[os.path.join(ROOT, "build", "lib", "libcex_demo.a")],
+        define_macros=[("CEX_DEMO_STATIC", "1")],
+        extra_objects=[LIB],
         extra_compile_args=["-fPIC"],
     )

@@ -9,15 +9,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: "0.16.0"
       - name: bootstrap cex
         run: cc cex.c -o cex
       - name: native tests
         run: ./cex test run all
       - name: build library
         run: ./cex build-lib
+      - name: bindings
+        run: ./cex bindings all
 
-  bindings:
-    runs-on: ubuntu-latest
+  macos:
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -32,19 +44,12 @@ jobs:
           version: "0.16.0"
       - name: bootstrap cex
         run: cc cex.c -o cex
-      - name: bindings
-        run: ./cex bindings all
-
-  macos:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: bootstrap cex
-        run: cc cex.c -o cex
       - name: native tests
         run: ./cex test run all
       - name: build library
         run: ./cex build-lib
+      - name: bindings
+        run: ./cex bindings all
 
   windows:
     runs-on: windows-latest
@@ -59,9 +64,20 @@ jobs:
           update: true
           install: >-
             mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-go
+            mingw-w64-x86_64-nodejs
+            mingw-w64-x86_64-python
+            mingw-w64-x86_64-python-cffi
+            mingw-w64-x86_64-python-pip
+            mingw-w64-x86_64-python-setuptools
+            mingw-w64-x86_64-cython
+            mingw-w64-x86_64-rust
+            mingw-w64-x86_64-zig
       - name: bootstrap cex
-        run: cc cex.c -o cex
+        run: gcc cex.c -o cex
       - name: native tests
         run: ./cex test run all
       - name: build library
         run: ./cex build-lib
+      - name: bindings
+        run: ./cex bindings all

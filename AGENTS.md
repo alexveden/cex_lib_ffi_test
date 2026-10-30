@@ -14,7 +14,8 @@ functions, one native test.
 ## Build and test
 
 - `./cex` is gitignored; create it with `cc cex.c -o cex`.
-- `./cex build-lib` builds `build/lib/libcex_demo.a` and the shared library.
+- `./cex build-lib` builds the static archive (`libcex_demo.a`, or
+  `libcex_demo.lib` on Windows) and the shared library.
 - `./cex test run all` runs the native tests (ASan/UBSan).
 - One case: `./cex test run tests/test_cex_demo.c --filter='cex_demo_run_increments'`.
 - `./cex bindings [all|<name>...]` builds the library once and runs bindings.
@@ -31,6 +32,8 @@ functions, one native test.
 - Current: `c_static`, `cpp_static`, `go_cgo`, `nodejs_koffi`, `python_capi`,
   `python_cffi`, `python_ctypes`, `python_cython`, `rust_static`,
   `zig_static`.
+- CI runs `./cex bindings all` on Linux, macOS and Windows; each job installs
+  the `go`, `cargo`, `zig`, `node`/`npm` and Python toolchains.
 - Add a language: create the dir, mirror the ABI by hand, add a runner and a
   table entry in `cex.c`.
 

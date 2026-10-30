@@ -26,8 +26,9 @@ cc cex.c -o cex
 ./cex bindings
 ```
 
-`./cex build-lib` writes `build/lib/libcex_demo.a` and the shared library.
-`./cex bindings` builds the library once and runs every binding.
+`./cex build-lib` writes the static archive and shared library under
+`build/lib/` (`libcex_demo.a`/`.so`/`.dylib`, or `libcex_demo.lib`/`.dll` on
+Windows). `./cex bindings` builds the library once and runs every binding.
 
 `lib/cex_demo.c` includes `cex.h`; `cex.h` is vendored and must not be edited.
 

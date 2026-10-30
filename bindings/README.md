@@ -23,8 +23,10 @@ ergonomics examples, not a test suite.
   and `cex_demo_Error.argument`. The string is printed for display only.
   `python_capi` and `python_cython` are the exception: they hide the pointer in C
   and assert the error by exception class instead.
-- Static bindings link the platform static library under `build/lib/`. Dynamic
-  bindings load the platform shared library from `build/lib/`.
+- Static bindings link the platform static library under `build/lib/`
+  (`libcex_demo.a`, or `libcex_demo.lib` on Windows) and define
+  `CEX_DEMO_STATIC`. Dynamic bindings load the platform shared library from
+  `build/lib/`.
 - The example shows one happy-path FFI call, the `NULL`-request error path, and
   the traceback.
 - cffi and cython may install their dependencies into `build/venv`, and koffi
@@ -54,16 +56,18 @@ ergonomics examples, not a test suite.
 
 ## Notes
 
+- CI runs every binding on Linux, macOS and Windows; each job installs the
+  `go`, `cargo`, `zig`, `node`/`npm` and Python toolchains.
 - `go_cgo`, `rust_static` and `zig_static` report `FAIL <name>` with
   `toolchain not found` when `go`, `cargo` or `zig` is missing; `./cex bindings`
-  continues with the remaining bindings and exits non-zero. CI installs all three.
+  continues with the remaining bindings and exits non-zero.
 - `nodejs_koffi` installs `koffi` into `build/node` from npm on first run.
   koffi cannot read exported data symbols, so the example captures
   `cex_demo_run(NULL)` — the same address as `cex_demo_Error.argument` — and
   treats `cex_demo_Error.ok` as `NULL`.
-- `python_capi` needs `python3-config` and the Python development headers, and
-  requires CPython 3.10+ for `PyModule_AddObjectRef`. It compiles with `cc` and
-  has no Python package dependencies.
+- `python_capi` needs the Python development headers and requires CPython 3.10+
+  for `PyModule_AddObjectRef`. It queries `sysconfig` for the include dir and
+  extension suffix, compiles with `cc`, and has no Python package dependencies.
 - `python_cython` compiles through `pyximport` on import; the runner installs
   `cython` into `build/venv` on first run and links the archive via
   `_cex_demo_cython.pyxbld`.

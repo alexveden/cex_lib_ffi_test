@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const c = @cImport({
+    @cDefine("CEX_DEMO_STATIC", "1");
     @cInclude("cex_demo.h");
 });
 

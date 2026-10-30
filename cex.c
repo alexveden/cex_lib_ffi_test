@@ -180,6 +180,7 @@ bindings__run_c_static(void)
         "-Wall",
         "-Wextra",
         "-Werror",
+        "-DCEX_DEMO_STATIC",
         "-Ilib",
         "-c",
         "bindings/c_static/main.c",
@@ -204,6 +205,7 @@ bindings__run_cpp_static(void)
         "-Wextra",
         "-Werror",
         "-std=c++20",
+        "-DCEX_DEMO_STATIC",
         "-Ilib",
         "-c",
         "bindings/cpp_static/main.cpp",
@@ -239,6 +241,20 @@ bindings__run_nodejs_koffi(void)
     char* node_dir = str.fmt(mem$, "%s/node", cexy$build_dir);
     char* node_modules = os.path.absolute(str.fmt(mem$, "%s/node_modules", node_dir), mem$);
     if (!os.path.exists(str.fmt(mem$, "%s/koffi", node_modules))) {
+#if defined(_WIN32)
+        e$ret(os$cmd(
+            "cmd.exe",
+            "/c",
+            "npm",
+            "install",
+            "--prefix",
+            node_dir,
+            "--no-audit",
+            "--no-fund",
+            "--silent",
+            "koffi"
+        ));
+#else
         e$ret(os$cmd(
             "npm",
             "install",
@@ -249,6 +265,7 @@ bindings__run_nodejs_koffi(void)
             "--silent",
             "koffi"
         ));
+#endif
     }
     e$ret(os.env.set("NODE_PATH", node_modules));
     return os$cmd("node", "bindings/nodejs_koffi/main.js");
@@ -265,18 +282,31 @@ bindings__capture(char** args, usize args_len)
     return str.fmt(mem$, "%S", str.slice.strip(str.sstr(out)));
 }
 
+static char*
+bindings__python_exe(void)
+{
+    if (os.cmd.exists("python3")) { return "python3"; }
+    if (os.cmd.exists("python")) { return "python"; }
+    return NULL;
+}
+
 static Exception
 bindings__ensure_venv(char** py)
 {
+    char* python = bindings__python_exe();
+    if (!python) {
+        log$error("python not found\n");
+        return e$raise(Error.not_found, "python not found");
+    }
     char* venv = str.fmt(mem$, "%s/venv", cexy$build_dir);
     char* py_posix = str.fmt(mem$, "%s/bin/python", venv);
     char* py_win = str.fmt(mem$, "%s/Scripts/python.exe", venv);
     if (!os.path.exists(py_posix) && !os.path.exists(py_win)) {
-        if (!os.cmd.exists("python3")) {
-            log$error("python3 not found\n");
-            return e$raise(Error.not_found, "python3 not found");
-        }
-        e$ret(os$cmd("python3", "-m", "venv", venv));
+#if defined(_WIN32)
+        e$ret(os$cmd(python, "-m", "venv", "--without-pip", "--system-site-packages", venv));
+#else
+        e$ret(os$cmd(python, "-m", "venv", venv));
+#endif
     }
     *py = os.path.exists(py_win) ? py_win : py_posix;
     if (!os.path.exists(*py)) {
@@ -289,21 +319,22 @@ bindings__ensure_venv(char** py)
 static Exception
 bindings__run_python_capi(void)
 {
-    if (!os.cmd.exists("python3-config")) {
-        log$error("python3-config not found\n");
-        return e$raise(Error.not_found, "python3-config not found");
+    char* py = bindings__python_exe();
+    if (!py) {
+        log$error("python not found\n");
+        return e$raise(Error.not_found, "python not found");
     }
-    char* includes = bindings__capture(
-        (char*[]){ "python3-config", "--includes", NULL },
-        3
+    char* include = bindings__capture(
+        (char*[]){ py, "-c", "import sysconfig;print(sysconfig.get_paths()['include'])", NULL },
+        4
     );
     char* suffix = bindings__capture(
-        (char*[]){ "python3-config", "--extension-suffix", NULL },
-        3
+        (char*[]){ py, "-c", "import sysconfig;print(sysconfig.get_config_var('EXT_SUFFIX'))", NULL },
+        4
     );
-    if (!includes || !suffix || !*suffix) {
-        log$error("python3-config query failed\n");
-        return e$raise(Error.not_found, "python3-config query failed");
+    if (!include || !*include || !suffix || !*suffix) {
+        log$error("python sysconfig query failed\n");
+        return e$raise(Error.not_found, "python sysconfig query failed");
     }
     char* out_dir = str.fmt(mem$, "%s/bindings/python_capi", cexy$build_dir);
     e$ret(os.fs.mkpath(str.fmt(mem$, "%s/x", out_dir)));
@@ -311,23 +342,36 @@ bindings__run_python_capi(void)
     char* lib = str.fmt(mem$, "%s/lib/libcex_demo%s", cexy$build_dir, cexy$build_ext_lib_stat);
 
     arr$(char*) args = arr$new(args, mem$);
-    arr$pushm(args, cexy$cc, "-Wall", "-Wextra", "-Werror", "-shared", "-fPIC", "-Ilib");
+    arr$pushm(args, cexy$cc, "-Wall", "-Wextra", "-Werror", "-shared", "-fPIC", "-Ilib", "-DCEX_DEMO_STATIC");
+    arr$pushm(args, str.fmt(mem$, "-I%s", include));
 #if defined(__APPLE__)
     arr$pushm(args, "-undefined", "dynamic_lookup");
+#elif defined(_WIN32)
+    char* pylib = bindings__capture(
+        (char*[]){ py,
+                   "-c",
+                   "import sys,sysconfig,os\n"
+                   "v=sysconfig.get_config_var('LDVERSION') or '%d.%d'%sys.version_info[:2]\n"
+                   "l=sysconfig.get_config_var('LDLIBRARY')\n"
+                   "c=[os.path.join(sysconfig.get_config_var('LIBDIR') or '',l) if l else '',"
+                   "os.path.join(sys.base_prefix,'lib','libpython%s.dll.a'%v),"
+                   "os.path.join(sys.base_prefix,'lib','libpython%s.a'%v),"
+                   "os.path.join(sys.base_prefix,'libs','python%s.lib'%v)]\n"
+                   "print(next((p for p in c if p and os.path.exists(p)),''))",
+                   NULL },
+        4
+    );
+    if (!pylib || !*pylib || !os.path.exists(pylib)) {
+        log$error("python import library not found\n");
+        return e$raise(Error.not_found, "python import library not found");
+    }
+    arr$pushm(args, pylib);
 #endif
-    arr$(char*) parts = str.split(includes, " ", mem$);
-    if (!parts) {
-        log$error("python3-config --includes parse failed\n");
-        return e$raise(Error.runtime, "python3-config --includes parse failed");
-    }
-    for$each (part, parts, arr$len(parts)) {
-        if (*part) { arr$pushm(args, part); }
-    }
     arr$pushm(args, "bindings/python_capi/main.c", lib, "-o", ext);
     arr$push(args, NULL);
     e$ret(os$cmda(args));
     arr$free(args);
-    return os$cmd("python3", "bindings/python_capi/main.py");
+    return os$cmd(py, "bindings/python_capi/main.py");
 }
 
 static Exception
@@ -348,21 +392,22 @@ bindings__run_python_cffi(void)
 static Exception
 bindings__run_python_ctypes(void)
 {
-    if (!os.cmd.exists("python3")) {
-        log$error("python3 not found\n");
-        return e$raise(Error.not_found, "python3 not found");
+    char* py = bindings__python_exe();
+    if (!py) {
+        log$error("python not found\n");
+        return e$raise(Error.not_found, "python not found");
     }
-    return os$cmd("python3", "bindings/python_ctypes/main.py");
+    return os$cmd(py, "bindings/python_ctypes/main.py");
 }
 
 static Exception
 bindings__run_python_cython(void)
 {
-    if (!os.cmd.exists("python3")) {
-        log$error("python3 not found\n");
-        return e$raise(Error.not_found, "python3 not found");
+    char* py = bindings__python_exe();
+    if (!py) {
+        log$error("python not found\n");
+        return e$raise(Error.not_found, "python not found");
     }
-    char* py = NULL;
     e$ret(bindings__ensure_venv(&py));
     if (os$cmd(py, "-c", "import Cython") != EOK) {
         e$ret(os$cmd(py, "-m", "pip", "install", "--quiet", "cython", "setuptools"));

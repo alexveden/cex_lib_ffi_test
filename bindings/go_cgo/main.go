@@ -1,8 +1,9 @@
 package main
 
 /*
-#cgo CFLAGS: -I${SRCDIR}/../../lib
-#cgo LDFLAGS: ${SRCDIR}/../../build/lib/libcex_demo.a -lpthread
+#cgo CFLAGS: -I${SRCDIR}/../../lib -DCEX_DEMO_STATIC
+#cgo windows LDFLAGS: ${SRCDIR}/../../build/lib/libcex_demo.lib
+#cgo !windows LDFLAGS: ${SRCDIR}/../../build/lib/libcex_demo.a -lpthread
 #include "cex_demo.h"
 */
 import "C"
