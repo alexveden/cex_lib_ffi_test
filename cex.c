@@ -251,7 +251,6 @@ bindings__run_nodejs_koffi(void)
             node_dir,
             "--no-audit",
             "--no-fund",
-            "--silent",
             "koffi"
         ));
 #else
@@ -262,7 +261,6 @@ bindings__run_nodejs_koffi(void)
             node_dir,
             "--no-audit",
             "--no-fund",
-            "--silent",
             "koffi"
         ));
 #endif
@@ -301,14 +299,15 @@ bindings__ensure_venv(char** py)
     char* venv = str.fmt(mem$, "%s/venv", cexy$build_dir);
     char* py_posix = str.fmt(mem$, "%s/bin/python", venv);
     char* py_win = str.fmt(mem$, "%s/Scripts/python.exe", venv);
-    if (!os.path.exists(py_posix) && !os.path.exists(py_win)) {
+    char* py_mingw = str.fmt(mem$, "%s/bin/python.exe", venv);
+    if (!os.path.exists(py_posix) && !os.path.exists(py_win) && !os.path.exists(py_mingw)) {
 #if defined(_WIN32)
         e$ret(os$cmd(python, "-m", "venv", "--without-pip", "--system-site-packages", venv));
 #else
         e$ret(os$cmd(python, "-m", "venv", venv));
 #endif
     }
-    *py = os.path.exists(py_win) ? py_win : py_posix;
+    *py = os.path.exists(py_win) ? py_win : (os.path.exists(py_posix) ? py_posix : py_mingw);
     if (!os.path.exists(*py)) {
         log$error("python venv not found\n");
         return e$raise(Error.not_found, "python venv not found");
@@ -344,10 +343,11 @@ bindings__run_python_capi(void)
     arr$(char*) args = arr$new(args, mem$);
     arr$pushm(args, cexy$cc, "-Wall", "-Wextra", "-Werror", "-shared", "-fPIC", "-Ilib", "-DCEX_DEMO_STATIC");
     arr$pushm(args, str.fmt(mem$, "-I%s", include));
+    char* pylib = NULL;
 #if defined(__APPLE__)
     arr$pushm(args, "-undefined", "dynamic_lookup");
 #elif defined(_WIN32)
-    char* pylib = bindings__capture(
+    pylib = bindings__capture(
         (char*[]){ py,
                    "-c",
                    "import sys,sysconfig,os\n"
@@ -365,9 +365,10 @@ bindings__run_python_capi(void)
         log$error("python import library not found\n");
         return e$raise(Error.not_found, "python import library not found");
     }
-    arr$pushm(args, pylib);
 #endif
-    arr$pushm(args, "bindings/python_capi/main.c", lib, "-o", ext);
+    arr$pushm(args, "bindings/python_capi/main.c", lib);
+    if (pylib) { arr$pushm(args, pylib); }
+    arr$pushm(args, "-o", ext);
     arr$push(args, NULL);
     e$ret(os$cmda(args));
     arr$free(args);
@@ -409,7 +410,7 @@ bindings__run_python_cython(void)
         return e$raise(Error.not_found, "python not found");
     }
     e$ret(bindings__ensure_venv(&py));
-    if (os$cmd(py, "-c", "import Cython") != EOK) {
+    if (os$cmd(py, "-c", "import importlib.util,sys; sys.exit(importlib.util.find_spec('Cython') is None)") != EOK) {
         e$ret(os$cmd(py, "-m", "pip", "install", "--quiet", "cython", "setuptools"));
     }
     e$ret(os.fs.mkpath(str.fmt(mem$, "%s/bindings/python_cython/", cexy$build_dir)));

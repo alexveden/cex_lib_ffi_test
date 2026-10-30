@@ -30,6 +30,8 @@ jobs:
 
   macos:
     runs-on: macos-latest
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "11.0"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -49,7 +51,7 @@ jobs:
       - name: build library
         run: ./cex build-lib
       - name: bindings
-        run: ./cex bindings all
+        run: ARCHFLAGS="-arch $(uname -m)" ./cex bindings all
 
   windows:
     runs-on: windows-latest
@@ -61,6 +63,7 @@ jobs:
       - uses: msys2/setup-msys2@v2
         with:
           msystem: UCRT64
+          path-type: inherit
           update: true
           install: >-
             mingw-w64-ucrt-x86_64-gcc
@@ -72,6 +75,8 @@ jobs:
             mingw-w64-ucrt-x86_64-python-setuptools
             mingw-w64-ucrt-x86_64-cython
             mingw-w64-ucrt-x86_64-rust
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
       - uses: mlugg/setup-zig@v2
         with:
           version: "0.16.0"
