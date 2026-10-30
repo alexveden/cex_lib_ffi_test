@@ -111,7 +111,7 @@ static Exception
 cex_build_lib__cross_one(char* out_dir, const cex_build_lib__target_s* t)
 {
     char* dir = str.fmt(mem$, "%s/%s", out_dir, t->triple);
-    e$ret(os.fs.mkpath(str.fmt(mem$, "%s/x", dir)));
+    e$ret(os.fs.mkpath(str.fmt(mem$, "%s/", dir)));
     char* out = str.fmt(mem$, "%s/libcex_demo%s", dir, t->ext);
 
     arr$(char*) args = arr$new(args, mem$);
@@ -155,7 +155,7 @@ cmd_build_lib(int argc, char** argv, void* user_ctx)
     }
 
     char* out_dir = cexy$build_dir "/lib";
-    e$ret(os.fs.mkpath(str.fmt(mem$, "%s/x", out_dir)));
+    e$ret(os.fs.mkpath(str.fmt(mem$, "%s/", out_dir)));
     if (want_native) { e$ret(cex_build_lib__native(out_dir)); }
     if (want_cross) { e$ret(cex_build_lib__cross(out_dir)); }
     return EOK;
@@ -171,7 +171,7 @@ static Exception
 bindings__run_c_static(void)
 {
     char* out_dir = str.fmt(mem$, "%s/bindings/c_static", cexy$build_dir);
-    e$ret(os.fs.mkpath(out_dir));
+    e$ret(os.fs.mkpath(str.fmt(mem$, "%s/", out_dir)));
     char* obj = str.fmt(mem$, "%s/main.o", out_dir);
     char* exe = str.fmt(mem$, "%s/main%s", out_dir, cexy$build_ext_exe);
     char* lib = str.fmt(mem$, "%s/lib/libcex_demo%s", cexy$build_dir, cexy$build_ext_lib_stat);
@@ -195,7 +195,7 @@ static Exception
 bindings__run_cpp_static(void)
 {
     char* out_dir = str.fmt(mem$, "%s/bindings/cpp_static", cexy$build_dir);
-    e$ret(os.fs.mkpath(out_dir));
+    e$ret(os.fs.mkpath(str.fmt(mem$, "%s/", out_dir)));
     char* obj = str.fmt(mem$, "%s/main.o", out_dir);
     char* exe = str.fmt(mem$, "%s/main%s", out_dir, cexy$build_ext_exe);
     char* lib = str.fmt(mem$, "%s/lib/libcex_demo%s", cexy$build_dir, cexy$build_ext_lib_stat);
@@ -224,7 +224,7 @@ bindings__run_go_cgo(void)
         return e$raise(Error.not_found, "go toolchain not found");
     }
     char* out_dir = str.fmt(mem$, "%s/bindings/go_cgo", cexy$build_dir);
-    e$ret(os.fs.mkpath(out_dir));
+    e$ret(os.fs.mkpath(str.fmt(mem$, "%s/", out_dir)));
     char* exe = os.path.absolute(str.fmt(mem$, "%s/main%s", out_dir, cexy$build_ext_exe), mem$);
     e$ret(os.env.set("CGO_ENABLED", "1"));
     e$ret(os$cmd("go", "build", "-C", "bindings/go_cgo", "-o", exe, "."));
@@ -337,7 +337,7 @@ bindings__run_python_capi(void)
         return e$raise(Error.not_found, "python sysconfig query failed");
     }
     char* out_dir = str.fmt(mem$, "%s/bindings/python_capi", cexy$build_dir);
-    e$ret(os.fs.mkpath(str.fmt(mem$, "%s/x", out_dir)));
+    e$ret(os.fs.mkpath(str.fmt(mem$, "%s/", out_dir)));
     char* ext = str.fmt(mem$, "%s/_cex_demo_capi%s", out_dir, suffix);
     char* lib = str.fmt(mem$, "%s/lib/libcex_demo%s", cexy$build_dir, cexy$build_ext_lib_stat);
 
@@ -412,7 +412,7 @@ bindings__run_python_cython(void)
     if (os$cmd(py, "-c", "import Cython") != EOK) {
         e$ret(os$cmd(py, "-m", "pip", "install", "--quiet", "cython", "setuptools"));
     }
-    e$ret(os.fs.mkpath(str.fmt(mem$, "%s/bindings/python_cython/x", cexy$build_dir)));
+    e$ret(os.fs.mkpath(str.fmt(mem$, "%s/bindings/python_cython/", cexy$build_dir)));
     return os$cmd(py, "bindings/python_cython/main.py");
 }
 
@@ -445,7 +445,7 @@ bindings__run_zig_static(void)
         return e$raise(Error.not_found, "zig toolchain not found");
     }
     char* out_dir = str.fmt(mem$, "%s/bindings/zig_static", cexy$build_dir);
-    e$ret(os.fs.mkpath(out_dir));
+    e$ret(os.fs.mkpath(str.fmt(mem$, "%s/", out_dir)));
     char* exe = str.fmt(mem$, "%s/main%s", out_dir, cexy$build_ext_exe);
     char* lib = str.fmt(mem$, "%s/lib/libcex_demo%s", cexy$build_dir, cexy$build_ext_lib_stat);
     e$ret(os$cmd(
