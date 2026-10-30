@@ -50,7 +50,8 @@ functions, one native test.
   traceback into `buf`; `NULL`/zero buffer returns `argument`, insufficient
   space returns `overflow`. It uses `cexsp__snprintf` directly so the traceback
   ring is not reset on overflow.
-- Unity builds (`tests/`) define `CEX_DEMO_PREBUILT`; the library then fills
-  `cex_demo_Error` from CEX's `Error` in a constructor.
+- `cex_demo_Error` is statically initialized from the `_cex_errors_Error_*`
+  string arrays in `cex.h`, so it is `const` in every build (including the
+  precompiled test object).
 - Changing the ABI means touching `lib/cex_demo.h`, `lib/cex_demo.c`, and
   `tests/test_cex_demo.c`.

@@ -1,7 +1,6 @@
 #define CEX_IMPLEMENTATION
 #define CEX_TEST
 #include "cex.h"
-#define CEX_DEMO_PREBUILT
 #include "lib/cex_demo.c"
 
 test$case(cex_demo_run_increments)
