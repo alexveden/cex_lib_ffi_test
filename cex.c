@@ -92,8 +92,9 @@ cex_build_lib__native(char* out_dir)
     arr$pushm(args, cexy$cc);
 #if defined(_WIN32)
     arr$pushm(args, "-shared");
+    arr$pushm(args, str.fmt(mem$, "-Wl,--out-implib,%s/libcex_demo.dll.a", out_dir));
 #elif defined(__APPLE__)
-    arr$pushm(args, "-dynamiclib", "-pthread");
+    arr$pushm(args, "-dynamiclib", "-pthread", "-Wl,-install_name,@rpath/libcex_demo.dylib");
 #else
     arr$pushm(args, "-shared", "-Wl,-soname,libcex_demo.so", "-pthread");
 #endif
@@ -213,6 +214,59 @@ bindings__run_cpp_static(void)
         obj
     ));
     e$ret(os$cmd("g++", obj, lib, "-o", exe));
+    return os$cmd(exe);
+}
+
+// Link the demo shared library. Its CEX runtime is hidden, so the unity-build
+// program keeps its own inlined/stripped runtime without duplicate symbols.
+// The two runtimes are separate; errors are compared against cex_demo_Error.
+static Exception
+bindings__run_c_cex(void)
+{
+    char* out_dir = str.fmt(mem$, "%s/bindings/c_cex", cexy$build_dir);
+    e$ret(os.fs.mkpath(str.fmt(mem$, "%s/", out_dir)));
+    char* obj = str.fmt(mem$, "%s/main.o", out_dir);
+    char* exe = str.fmt(mem$, "%s/main%s", out_dir, cexy$build_ext_exe);
+#if defined(__APPLE__)
+    char* dyn_lib = str.fmt(mem$, "%s/lib/libcex_demo.dylib", cexy$build_dir);
+#else
+    char* dyn_lib = str.fmt(mem$, "%s/lib/libcex_demo%s", cexy$build_dir, cexy$build_ext_lib_dyn);
+#endif
+
+    arr$(char*) args = arr$new(args, mem$);
+    arr$pushm(args, cexy$cc, "-Wall", "-Wextra", "-Werror", "-O2", "-I.", "-Ilib");
+#if !defined(__APPLE__)
+    arr$pushm(args, "-ffunction-sections", "-fdata-sections");
+#endif
+    arr$pushm(args, "-c", "bindings/c_cex/main.c", "-o", obj);
+    arr$push(args, NULL);
+    e$ret(os$cmda(args));
+    arr$free(args);
+
+    arr$(char*) link = arr$new(link, mem$);
+    arr$pushm(link, cexy$cc, obj);
+#if defined(_WIN32)
+    arr$pushm(link, str.fmt(mem$, "%s/lib/libcex_demo.dll.a", cexy$build_dir));
+    arr$pushm(link, "-Wl,--gc-sections");
+    arr$pushm(link, "-o", exe);
+    arr$push(link, NULL);
+    e$ret(os$cmda(link));
+    arr$free(link);
+    char* dll_dst = str.fmt(mem$, "%s/libcex_demo.dll", out_dir);
+    if (os.path.exists(dll_dst)) { e$ret(os.fs.remove(dll_dst)); }
+    e$ret(os.fs.copy(dyn_lib, dll_dst));
+#else
+    arr$pushm(link, dyn_lib);
+#if defined(__APPLE__)
+    arr$pushm(link, "-Wl,-rpath,@loader_path/../../lib", "-Wl,-dead_strip");
+#else
+    arr$pushm(link, "-Wl,-rpath,$ORIGIN/../../lib", "-Wl,--gc-sections");
+#endif
+    arr$pushm(link, "-o", exe);
+    arr$push(link, NULL);
+    e$ret(os$cmda(link));
+    arr$free(link);
+#endif
     return os$cmd(exe);
 }
 
@@ -552,6 +606,7 @@ bindings__run_zig_static(void)
 static binding_s bindings__table[] = {
     { "c_static", bindings__run_c_static },
     { "cpp_static", bindings__run_cpp_static },
+    { "c_cex", bindings__run_c_cex },
     { "go_cgo", bindings__run_go_cgo },
     { "lua_capi", bindings__run_lua_capi },
     { "lua_ffi", bindings__run_lua_ffi },

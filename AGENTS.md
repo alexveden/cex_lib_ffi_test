@@ -29,7 +29,7 @@ functions, one native test.
   `value=42`, `error=ArgumentError`, and a `traceback=` block per example, and
   exits non-zero if any fail. `./cex bindings <name>...` runs only the named
   bindings.
-- Current: `c_static`, `cpp_static`, `go_cgo`, `lua_capi`, `lua_ffi`,
+- Current: `c_static`, `cpp_static`, `c_cex`, `go_cgo`, `lua_capi`, `lua_ffi`,
   `nodejs_koffi`, `python_capi`, `python_cffi`, `python_ctypes`,
   `python_cython`, `rust_static`, `zig_static`.
 - CI runs `./cex bindings all` on Linux, macOS and Windows; each job installs

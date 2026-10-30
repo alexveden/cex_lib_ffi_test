@@ -34,10 +34,10 @@ Windows). `./cex bindings` builds the library once and runs every binding.
 
 ## Bindings
 
-Twelve language bindings live under `bindings/`: `c_static`, `cpp_static`,
-`go_cgo`, `lua_capi`, `lua_ffi`, `nodejs_koffi`, `python_capi`, `python_cffi`,
-`python_ctypes`, `python_cython`, `rust_static`, and `zig_static`. Each is an
-ergonomics example, not a test suite.
+Thirteen language bindings live under `bindings/`: `c_static`, `cpp_static`,
+`c_cex`, `go_cgo`, `lua_capi`, `lua_ffi`, `nodejs_koffi`, `python_capi`,
+`python_cffi`, `python_ctypes`, `python_cython`, `rust_static`, and
+`zig_static`. Each is an ergonomics example, not a test suite.
 
 ```sh
 ./cex bindings              # all bindings

@@ -26,7 +26,8 @@ ergonomics examples, not a test suite.
 - Static bindings link the platform static library under `build/lib/`
   (`libcex_demo.a`, or `libcex_demo.lib` on Windows) and define
   `CEX_DEMO_STATIC`. Dynamic bindings load the platform shared library from
-  `build/lib/`.
+  `build/lib/`; `c_cex` links it at build time (rpath on POSIX, import lib and
+  copied DLL on Windows).
 - The example shows one happy-path FFI call, the `NULL`-request error path, and
   the traceback.
 - cffi and cython may install their dependencies into `build/venv`, and koffi
@@ -45,6 +46,9 @@ ergonomics examples, not a test suite.
 
 - `c_static` — C consumer linked against the static archive.
 - `cpp_static` — C++ consumer linked against the static archive.
+- `c_cex` — CEX unity-build program; links the shared library. Both sides keep
+  their own CEX runtime (the library's is hidden), so there are no duplicate
+  symbols. Errors are compared against `cex_demo_Error`.
 - `go_cgo` — cgo, static archive via `#cgo LDFLAGS`.
 - `lua_capi` — Lua C module, `Request` userdata and error tables, linked
   against the archive.
