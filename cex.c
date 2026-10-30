@@ -358,10 +358,11 @@ bindings__run_lua_capi(void)
     e$ret(bindings__append_pkgconf(&args, "--cflags"));
 #if defined(__APPLE__)
     arr$pushm(args, "-undefined", "dynamic_lookup");
-#else
-    e$ret(bindings__append_pkgconf(&args, "--libs"));
 #endif
     arr$pushm(args, "bindings/lua_capi/main.c", lib, "-o", module);
+#if !defined(__APPLE__)
+    e$ret(bindings__append_pkgconf(&args, "--libs"));
+#endif
     arr$push(args, NULL);
     e$ret(os$cmda(args));
     arr$free(args);
