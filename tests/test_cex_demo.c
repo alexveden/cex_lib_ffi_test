@@ -39,7 +39,7 @@ test$case(cex_demo_traceback_overflow)
     tassert(cex_demo_run(NULL) == cex_demo_Error.argument);
     char tiny[8];
     tassert(cex_demo_traceback(tiny, sizeof tiny) == cex_demo_Error.overflow);
-    tassert(tiny[0] == '\0');
+    tassert(tiny[sizeof tiny - 1] == '\0');
 
     char buf[512];
     tassert(cex_demo_traceback(buf, sizeof buf) == cex_demo_Error.ok);
