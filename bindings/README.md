@@ -19,12 +19,12 @@ ergonomics examples, not a test suite.
   and exits non-zero if any assertion fails. The traceback is asserted by
   substring (`cex_demo__validate_request`, `cex_demo_run`), not exact line
   numbers.
-- Assertions compare `cex_demo_exc_t` by pointer against `cex_demo_Error.ok`,
-  `cex_demo_Error.argument`, and `cex_demo_Error.overflow`. The string is
-  printed for display only.
+- Assertions compare `cex_demo_exc_t` by pointer against `cex_demo_Error.ok`
+  and `cex_demo_Error.argument`. The string is printed for display only.
 - Static bindings link the platform static library under `build/lib/`. Dynamic
   bindings load the platform shared library from `build/lib/`.
-- The example shows both the raw FFI call and a thin, idiomatic wrapper.
+- The example shows one happy-path FFI call, the `NULL`-request error path, and
+  the traceback.
 - cffi may install its dependency into `build/venv`, and koffi into
   `build/node`, on first run.
 
@@ -32,14 +32,15 @@ ergonomics examples, not a test suite.
 
 1. `mkdir bindings/<language>_<mechanism>`.
 2. Add the example source.
-3. Mirror `cex_demo_request_t` and `cex_demo_run` by hand from `lib/cex_demo.h`.
+3. Mirror `cex_demo_request_t`, `cex_demo_run`, and `cex_demo_traceback` by
+   hand from `lib/cex_demo.h`.
 4. Add a `bindings__run_*` runner and a `bindings__table` entry in `cex.c`.
 5. Run `./cex bindings <language>_<mechanism>`.
 
 ## Current bindings
 
 - `c_static` — C consumer linked against the static archive.
-- `cpp_static` — C++ consumer, `std::optional`/exception wrapper.
+- `cpp_static` — C++ consumer linked against the static archive.
 - `go_cgo` — cgo, static archive via `#cgo LDFLAGS`.
 - `nodejs_koffi` — koffi on the shared library.
 - `python_ctypes` — `ctypes.CDLL` on the shared library.

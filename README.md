@@ -44,6 +44,6 @@ Eight language bindings live under `bindings/`: `c_static`, `cpp_static`,
 
 `./cex bindings` builds the library once, runs every binding, and summarizes
 pass/fail. Each example compares `cex_demo_exc_t` by pointer against
-`cex_demo_Error.ok` / `.argument` / `.overflow`, then prints the traceback
-returned by `cex_demo_traceback`. See `bindings/README.md` for the per-binding
-contract and how to add a language.
+`cex_demo_Error.ok` / `.argument`, then prints the traceback returned by
+`cex_demo_traceback`. See `bindings/README.md` for the per-binding contract and
+how to add a language.

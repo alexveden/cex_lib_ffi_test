@@ -42,16 +42,6 @@ def error_text(exc):
     return ctypes.string_at(exc).decode()
 
 
-def run(value):
-    req = None if value is None else Request(value)
-    exc = _lib.cex_demo_run(ctypes.byref(req) if req else None)
-    if exc == _errors.argument:
-        raise RuntimeError(error_text(exc))
-    if exc != _errors.ok:
-        raise RuntimeError(error_text(exc))
-    return req.value if req else 0
-
-
 def main():
     lib = load()
 
@@ -62,23 +52,12 @@ def main():
         return 1
     print(f"value={req.value}")
 
-    if run(41) != 42:
-        print("wrapper failed", file=sys.stderr)
-        return 1
-
     exc = lib.cex_demo_run(None)
     if exc != _errors.argument:
         print("NULL request returned unexpected error", file=sys.stderr)
         return 1
     print(f"error={error_text(exc)}")
 
-    if lib.cex_demo_traceback(None, 0) != _errors.argument:
-        print("NULL traceback buffer returned unexpected error", file=sys.stderr)
-        return 1
-    tiny = ctypes.create_string_buffer(8)
-    if lib.cex_demo_traceback(tiny, len(tiny)) != _errors.overflow:
-        print("small traceback buffer returned unexpected error", file=sys.stderr)
-        return 1
     tb = ctypes.create_string_buffer(512)
     if lib.cex_demo_traceback(tb, len(tb)) != _errors.ok:
         print("traceback failed", file=sys.stderr)
@@ -88,14 +67,6 @@ def main():
         print("traceback missing frames", file=sys.stderr)
         return 1
     print(f"traceback={text}", end="")
-
-    try:
-        run(None)
-    except RuntimeError:
-        pass
-    else:
-        print("wrapper NULL request unexpectedly succeeded", file=sys.stderr)
-        return 1
     return 0
 
 

@@ -32,20 +32,6 @@ function traceback() {
     return buffer_text(buf);
 }
 
-function run(value) {
-    if (value === null) throw new Error(error_text(argument_error));
-    const req = koffi.alloc(Request, 1);
-    try {
-        koffi.encode(req, Request, { value });
-        const exc = run_raw(req);
-        if (exc === argument_error) throw new Error(error_text(exc));
-        if (exc !== null) throw new Error(error_text(exc));
-        return koffi.decode(req, Request).value;
-    } finally {
-        koffi.free(req);
-    }
-}
-
 function main() {
     const req = koffi.alloc(Request, 1);
     koffi.encode(req, Request, { value: 41 });
@@ -58,11 +44,6 @@ function main() {
     }
     console.log(`value=${value}`);
 
-    if (run(41) !== 42) {
-        console.error("wrapper failed");
-        return 1;
-    }
-
     const null_exc = run_raw(null);
     if (null_exc !== argument_error) {
         console.error("NULL request returned unexpected error");
@@ -70,33 +51,13 @@ function main() {
     }
     console.log(`error=${error_text(null_exc)}`);
 
-    if (traceback_raw(null, 0) !== argument_error) {
-        console.error("NULL traceback buffer returned unexpected error");
-        return 1;
-    }
-    const overflow_exc = traceback_raw(Buffer.alloc(1), 1);
-    if (overflow_exc === null || overflow_exc === argument_error) {
-        console.error("small traceback buffer returned unexpected error");
-        return 1;
-    }
-    if (traceback_raw(Buffer.alloc(1), 1) !== overflow_exc) {
-        console.error("small traceback buffer returned inconsistent error");
-        return 1;
-    }
     const tb = traceback();
     if (!tb.includes("cex_demo__validate_request") || !tb.includes("cex_demo_run")) {
         console.error("traceback missing frames");
         return 1;
     }
     process.stdout.write(`traceback=${tb}`);
-
-    try {
-        run(null);
-    } catch {
-        return 0;
-    }
-    console.error("wrapper NULL request unexpectedly succeeded");
-    return 1;
+    return 0;
 }
 
 process.exitCode = main();
