@@ -236,8 +236,19 @@ bindings__run_nodejs_koffi(void)
 {
 #if defined(_WIN32)
     char* node_cmd = "node.exe";
+    char* npm_cmd = "npm";
+    char* program_files = os.env.get("ProgramFiles", NULL);
+    if (program_files != NULL) {
+        char* system_node = str.fmt(mem$, "%s/nodejs/node.exe", program_files);
+        char* system_npm = str.fmt(mem$, "%s/nodejs/npm.cmd", program_files);
+        if (os.path.exists(system_node) && os.path.exists(system_npm)) {
+            node_cmd = system_node;
+            npm_cmd = system_npm;
+        }
+    }
 #else
     char* node_cmd = "node";
+    char* npm_cmd = "npm";
 #endif
     if (!os.cmd.exists(node_cmd)) {
         log$error("node not found\n");
@@ -247,22 +258,21 @@ bindings__run_nodejs_koffi(void)
     char* node_modules = os.path.absolute(str.fmt(mem$, "%s/node_modules", node_dir), mem$);
     if (!os.path.exists(str.fmt(mem$, "%s/koffi", node_modules))) {
 #if defined(_WIN32)
-        e$ret(os.fs.mkpath(str.fmt(mem$, "%s/", node_dir)));
-        e$ret(io.file.save(str.fmt(mem$, "%s/.npmrc", node_dir), "allow-scripts=koffi\n"));
         e$ret(os$cmd(
             "cmd.exe",
             "/c",
-            "npm",
+            npm_cmd,
             "install",
             "--prefix",
             node_dir,
             "--no-audit",
             "--no-fund",
+            "--ignore-scripts",
             "koffi"
         ));
 #else
         e$ret(os$cmd(
-            "npm",
+            npm_cmd,
             "install",
             "--prefix",
             node_dir,
@@ -273,7 +283,15 @@ bindings__run_nodejs_koffi(void)
 #endif
     }
     e$ret(os.env.set("NODE_PATH", node_modules));
-    return os$cmd(node_cmd, "bindings/nodejs_koffi/main.js");
+    char* args[] = { node_cmd, "bindings/nodejs_koffi/main.js", NULL };
+    os_cmd_c cmd = { 0 };
+    os_cmd_flags_s flags = { .combine_stdouterr = 1 };
+    e$ret(os.cmd.create(&cmd, args, arr$len(args), &flags));
+    char* out = os.cmd.read_all(&cmd, mem$);
+    Exc err = os.cmd.wait(&cmd, 1, 0);
+    if (out != NULL) { io.printf("%s", out); }
+    if (err) { log$error("node exited with code %d\n", os.cmd.ret_code(&cmd)); }
+    return err;
 }
 
 static char*

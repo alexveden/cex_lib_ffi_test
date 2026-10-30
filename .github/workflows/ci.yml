@@ -68,7 +68,6 @@ jobs:
           install: >-
             mingw-w64-ucrt-x86_64-gcc
             mingw-w64-ucrt-x86_64-go
-            mingw-w64-ucrt-x86_64-nodejs
             mingw-w64-ucrt-x86_64-python
             mingw-w64-ucrt-x86_64-python-cffi
             mingw-w64-ucrt-x86_64-python-pip
