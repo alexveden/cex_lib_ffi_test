@@ -232,6 +232,16 @@ bindings__run_go_cgo(void)
 }
 
 static Exception
+bindings__run_lua_ffi(void)
+{
+    if (!os.cmd.exists("luajit")) {
+        log$error("luajit toolchain not found\n");
+        return e$raise(Error.not_found, "luajit toolchain not found");
+    }
+    return os$cmd("luajit", "bindings/lua_ffi/main.lua");
+}
+
+static Exception
 bindings__run_nodejs_koffi(void)
 {
 #if defined(_WIN32)
@@ -303,6 +313,59 @@ bindings__capture(char** args, usize args_len)
     e$except (err, os.cmd.wait(&cmd, 1, 0)) { return NULL; }
     if (!out) { return NULL; }
     return str.fmt(mem$, "%S", str.slice.strip(str.sstr(out)));
+}
+
+static Exception
+bindings__append_pkgconf(arr$(char*)* args, char* flag)
+{
+    char* pkg = NULL;
+    if (os.cmd.exists("pkg-config")) {
+        pkg = "pkg-config";
+    } else if (os.cmd.exists("pkgconf")) {
+        pkg = "pkgconf";
+    }
+    if (!pkg) {
+        log$error("pkg-config not found\n");
+        return e$raise(Error.not_found, "pkg-config not found");
+    }
+    char* text = bindings__capture((char*[]){ pkg, flag, "luajit", NULL }, 4);
+    if (!text || !*text) {
+        log$error("luajit pkg-config not found\n");
+        return e$raise(Error.not_found, "luajit pkg-config not found");
+    }
+    return _cexy__utils__pkgconf_parse(mem$, args, text);
+}
+
+static Exception
+bindings__run_lua_capi(void)
+{
+    if (!os.cmd.exists("luajit")) {
+        log$error("luajit toolchain not found\n");
+        return e$raise(Error.not_found, "luajit toolchain not found");
+    }
+    char* out_dir = str.fmt(mem$, "%s/bindings/lua_capi", cexy$build_dir);
+    e$ret(os.fs.mkpath(str.fmt(mem$, "%s/", out_dir)));
+#if defined(_WIN32)
+    char* ext = ".dll";
+#else
+    char* ext = ".so";
+#endif
+    char* module = str.fmt(mem$, "%s/cex_demo%s", out_dir, ext);
+    char* lib = str.fmt(mem$, "%s/lib/libcex_demo%s", cexy$build_dir, cexy$build_ext_lib_stat);
+
+    arr$(char*) args = arr$new(args, mem$);
+    arr$pushm(args, cexy$cc, "-Wall", "-Wextra", "-Werror", "-shared", "-fPIC", "-Ilib", "-DCEX_DEMO_STATIC");
+    e$ret(bindings__append_pkgconf(&args, "--cflags"));
+#if defined(__APPLE__)
+    arr$pushm(args, "-undefined", "dynamic_lookup");
+#else
+    e$ret(bindings__append_pkgconf(&args, "--libs"));
+#endif
+    arr$pushm(args, "bindings/lua_capi/main.c", lib, "-o", module);
+    arr$push(args, NULL);
+    e$ret(os$cmda(args));
+    arr$free(args);
+    return os$cmd("luajit", "bindings/lua_capi/main.lua");
 }
 
 static char*
@@ -489,6 +552,8 @@ static binding_s bindings__table[] = {
     { "c_static", bindings__run_c_static },
     { "cpp_static", bindings__run_cpp_static },
     { "go_cgo", bindings__run_go_cgo },
+    { "lua_capi", bindings__run_lua_capi },
+    { "lua_ffi", bindings__run_lua_ffi },
     { "nodejs_koffi", bindings__run_nodejs_koffi },
     { "python_capi", bindings__run_python_capi },
     { "python_cffi", bindings__run_python_cffi },

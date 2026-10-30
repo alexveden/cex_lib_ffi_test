@@ -29,11 +29,11 @@ functions, one native test.
   `value=42`, `error=ArgumentError`, and a `traceback=` block per example, and
   exits non-zero if any fail. `./cex bindings <name>...` runs only the named
   bindings.
-- Current: `c_static`, `cpp_static`, `go_cgo`, `nodejs_koffi`, `python_capi`,
-  `python_cffi`, `python_ctypes`, `python_cython`, `rust_static`,
-  `zig_static`.
+- Current: `c_static`, `cpp_static`, `go_cgo`, `lua_capi`, `lua_ffi`,
+  `nodejs_koffi`, `python_capi`, `python_cffi`, `python_ctypes`,
+  `python_cython`, `rust_static`, `zig_static`.
 - CI runs `./cex bindings all` on Linux, macOS and Windows; each job installs
-  the `go`, `cargo`, `zig`, `node`/`npm` and Python toolchains.
+  the `go`, `cargo`, `zig`, `luajit`, `node`/`npm` and Python toolchains.
 - Add a language: create the dir, mirror the ABI by hand, add a runner and a
   table entry in `cex.c`.
 

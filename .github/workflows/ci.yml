@@ -19,6 +19,8 @@ jobs:
       - uses: mlugg/setup-zig@v2
         with:
           version: "0.16.0"
+      - name: lua toolchain
+        run: sudo apt-get update && sudo apt-get install -y luajit libluajit-5.1-dev
       - name: bootstrap cex
         run: cc cex.c -o cex
       - name: native tests
@@ -44,6 +46,8 @@ jobs:
       - uses: mlugg/setup-zig@v2
         with:
           version: "0.16.0"
+      - name: lua toolchain
+        run: brew install luajit pkgconf
       - name: bootstrap cex
         run: cc cex.c -o cex
       - name: native tests
@@ -73,6 +77,8 @@ jobs:
             mingw-w64-ucrt-x86_64-python-pip
             mingw-w64-ucrt-x86_64-python-setuptools
             mingw-w64-ucrt-x86_64-cython
+            mingw-w64-ucrt-x86_64-luajit
+            mingw-w64-ucrt-x86_64-pkgconf
             mingw-w64-ucrt-x86_64-rust
             mingw-w64-ucrt-x86_64-cmake
             mingw-w64-ucrt-x86_64-ninja
