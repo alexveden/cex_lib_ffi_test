@@ -234,7 +234,12 @@ bindings__run_go_cgo(void)
 static Exception
 bindings__run_nodejs_koffi(void)
 {
-    if (!os.cmd.exists("node")) {
+#if defined(_WIN32)
+    char* node_cmd = "node.exe";
+#else
+    char* node_cmd = "node";
+#endif
+    if (!os.cmd.exists(node_cmd)) {
         log$error("node not found\n");
         return e$raise(Error.not_found, "node not found");
     }
@@ -242,6 +247,8 @@ bindings__run_nodejs_koffi(void)
     char* node_modules = os.path.absolute(str.fmt(mem$, "%s/node_modules", node_dir), mem$);
     if (!os.path.exists(str.fmt(mem$, "%s/koffi", node_modules))) {
 #if defined(_WIN32)
+        e$ret(os.fs.mkpath(str.fmt(mem$, "%s/", node_dir)));
+        e$ret(io.file.save(str.fmt(mem$, "%s/.npmrc", node_dir), "allow-scripts=koffi\n"));
         e$ret(os$cmd(
             "cmd.exe",
             "/c",
@@ -266,7 +273,7 @@ bindings__run_nodejs_koffi(void)
 #endif
     }
     e$ret(os.env.set("NODE_PATH", node_modules));
-    return os$cmd("node", "bindings/nodejs_koffi/main.js");
+    return os$cmd(node_cmd, "bindings/nodejs_koffi/main.js");
 }
 
 static char*
@@ -413,7 +420,6 @@ bindings__run_python_cython(void)
     if (os$cmd(py, "-c", "import importlib.util,sys; sys.exit(importlib.util.find_spec('Cython') is None)") != EOK) {
         e$ret(os$cmd(py, "-m", "pip", "install", "--quiet", "cython", "setuptools"));
     }
-    e$ret(os.fs.mkpath(str.fmt(mem$, "%s/bindings/python_cython/", cexy$build_dir)));
     return os$cmd(py, "bindings/python_cython/main.py");
 }
 

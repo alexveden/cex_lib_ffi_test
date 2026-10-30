@@ -4,7 +4,7 @@ import sys
 import pyximport
 
 ROOT = os.getcwd()
-BUILD = os.path.join(ROOT, "build", "bindings", "python_cython")
+BUILD = os.path.join(ROOT, "bindings", "python_cython", "build")
 os.makedirs(BUILD, exist_ok=True)
 
 pyximport.install(build_dir=BUILD)
